@@ -4,7 +4,7 @@ MGET拆分与Pipeline——代码修改说明
 固定实验基线
 ------------
 MGET总聚合：100
-RTT超时定义：单条命令RTT > 5ms
+RTT超时定义：命令级RTT > 5ms；优化3的MGET命令级RTT指单批10-Key子命令
 线程规模：MGET 20、SET 20、热Key GET 40、APPEND 5
 阶段时长：阶段2 30秒、阶段3 60秒
 大Value：200KB
@@ -15,8 +15,8 @@ RTT超时定义：单条命令RTT > 5ms
 1. 每个逻辑请求仍处理100个Key。
 2. 拆成10条MGET(10)。
 3. Pipeline深度为8，每轮发送8条后读取回复。
-4. 单条小MGET继续记录命令RTT和5ms超时。
-5. 新增完整100Key逻辑请求数量及逻辑请求超过5ms数量。
+4. 报告中的MGET平均/最大RTT记录单批10-Key子命令，不代表完整100-Key逻辑请求。
+5. 完整100-Key逻辑请求单独统计完成数量及超过5ms数量，当前不统计其平均/最大RTT。
 6. 缓存、APPEND、TTL和Redis配置保持原始基线。
 
 当前是单主单备环境，本版验证拆批效果，不验证Redis Cluster跨Slot分散。
@@ -42,8 +42,8 @@ bash ./185_master_test_opt3_pipeline.sh
 --------
 1. CPU峰值和阶段平均值。
 2. RX/TX峰值。
-3. MGET、SET、GET、APPEND平均及最大RTT。
-4. RTT超过5ms的命令数。
+3. 10-Key MGET子批次、SET、GET、APPEND的命令级平均及最大RTT。
+4. 命令级RTT超过5ms的数量，以及完整100-Key逻辑请求超过5ms的数量。
 5. 主从复制状态、内存增长和网卡丢包。
 
 对照要求

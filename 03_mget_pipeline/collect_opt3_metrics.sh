@@ -197,14 +197,16 @@ fi
         echo "未找到result文件"
     fi
     echo
-    echo "[3] MGET/SET/GET/APPEND平均及最大RTT(us)"
+    echo "[3] 命令级平均及最大RTT(us)"
+    echo "口径说明: MGET为单批10-Key子命令RTT；SET/GET/APPEND为单条命令RTT。"
+    echo "          此处MGET不是完整100-Key逻辑请求RTT。"
     if [ -n "$CLIENT_FILE" ]; then
         grep -E '\[[^]]*RTT\(us\)\]' "$CLIENT_FILE" | tail -3 || echo "未解析到RTT"
     else
         echo "未找到client_out文件"
     fi
     echo
-    echo "[4] RTT超过5ms的命令数"
+    echo "[4] 命令级RTT超过5ms的数量"
     if [ -n "$CLIENT_FILE" ]; then
         s2=$(grep '\[阶段2结束\]' "$CLIENT_FILE" | tail -1 | sed -nE 's/.*超时=([0-9]+).*/\1/p')
         all=$(grep '\[全部结束\]' "$CLIENT_FILE" | tail -1 | sed -nE 's/.*超时=([0-9]+).*/\1/p')
@@ -213,6 +215,8 @@ fi
         echo "阶段3 RTT>5ms=$((all-s2))"
         echo "全程 RTT>5ms=$all"
         echo "优化特有统计:"
+        echo "下列MGET逻辑请求指完整100-Key请求（拆为10个10-Key子批次，Pipeline深度8）。"
+        echo "当前仅统计完成量和RTT>5ms数量，不提供完整逻辑请求平均/最大RTT。"
         grep -E '\[本地缓存\]|\[APPEND保护\]|\[MGET逻辑请求\]|\[逻辑TTL\]' "$CLIENT_FILE" | tail -8 || true
     else
         echo "未找到client_out文件"

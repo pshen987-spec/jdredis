@@ -388,7 +388,7 @@ collect() {
     if [ -n "$f_cli" ]; then
         grep -E '\[阶段2结束\]|\[全部结束\]' "$f_cli"
         grep -E '成功=|失败=|超时=' "$f_cli" | tail -1
-        echo "  [客户端RTT(us)] 时延(avg/max 为该阶段发起的同命令单次端到端耗时):"
+        echo "  [客户端RTT(us)] 时延(avg/max 为命令级单次端到端耗时；MGET为单批10-Key子命令，非完整100-Key逻辑请求):"
         grep -E '\[[^]]*RTT\(us\)\]' "$f_cli" | tail -3
         if grep -q '\[阶段2结束\]' "$f_cli" && grep -q '\[全部结束\]' "$f_cli"; then   # 客户端每秒OPS(累计/阶段时长)
             m2c=$(grep '\[阶段2结束\]' "$f_cli" | tail -1 | grep -oE '[^A-Za-z]MGET=[0-9]+' | head -1 | cut -d= -f2)

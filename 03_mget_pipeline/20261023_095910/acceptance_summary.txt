@@ -13,16 +13,20 @@
   [阶段2] 网卡 峰值RX=1030252kB/s  峰值TX=1740731kB/s
   [阶段3] 网卡 峰值RX=699777kB/s  峰值TX=2299795kB/s
 
-[3] MGET/SET/GET/APPEND平均及最大RTT(us)
+[3] 命令级平均及最大RTT(us)
+口径说明: MGET为单批10-Key子命令RTT；SET/GET/APPEND为单条命令RTT。
+          此处MGET不是完整100-Key逻辑请求RTT。
 [阶段2 RTT(us)] MGET avg=2491 max=15073 | SET avg=2184 max=8962 | GET avg=-1 max=-1 | APPEND avg=-1 max=-1
 [阶段3 RTT(us)] MGET avg=5355 max=88446 | SET avg=5285 max=90956 | GET avg=5585 max=26954 | APPEND avg=4928 max=34645
 [全程 RTT(us)] MGET avg=3882 max=88446 | SET avg=3849 max=90956 | GET avg=5585 max=26954 | APPEND avg=4928 max=34645
 
-[4] RTT超过5ms的命令数
+[4] 命令级RTT超过5ms的数量
 阶段2 RTT>5ms=12202
 阶段3 RTT>5ms=949483
 全程 RTT>5ms=961685
 优化特有统计:
+下列MGET逻辑请求指完整100-Key请求（拆为10个10-Key子批次，Pipeline深度8）。
+当前仅统计完成量和RTT>5ms数量，不提供完整逻辑请求平均/最大RTT。
 [MGET逻辑请求] 完成=116234 RTT>5ms=58144
 [MGET逻辑请求] 完成=226052 RTT>5ms=167919
 

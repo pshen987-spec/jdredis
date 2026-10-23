@@ -14,7 +14,7 @@
 [阶段2结束] MGET=1162396 SET=141478 GET=0 APPEND=0 成功=1303874 失败=0 超时=12202
 [全部结束] MGET=2260520 SET=305520 GET=429039 APPEND=12028 成功=3007107 失败=0 超时=961685
 [全部结束] MGET=2260520 SET=305520 GET=429039 APPEND=12028 成功=3007107 失败=0 超时=961685
-  [客户端RTT(us)] 时延(avg/max 为该阶段发起的同命令单次端到端耗时):
+  [客户端RTT(us)] 时延(avg/max 为命令级单次端到端耗时；MGET为单批10-Key子命令，非完整100-Key逻辑请求):
 [阶段2 RTT(us)] MGET avg=2491 max=15073 | SET avg=2184 max=8962 | GET avg=-1 max=-1 | APPEND avg=-1 max=-1
 [阶段3 RTT(us)] MGET avg=5355 max=88446 | SET avg=5285 max=90956 | GET avg=5585 max=26954 | APPEND avg=4928 max=34645
 [全程 RTT(us)] MGET avg=3882 max=88446 | SET avg=3849 max=90956 | GET avg=5585 max=26954 | APPEND avg=4928 max=34645
