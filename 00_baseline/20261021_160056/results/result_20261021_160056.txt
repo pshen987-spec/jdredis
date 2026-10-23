@@ -1,0 +1,86 @@
+===========================================================
+ Redis 问题复现 — 双节点压测结果   生成: Wed Oct 21 04:03:54 PM CST 2026
+ 本机(服务器)=20.20.21.185  压测机=20.20.21.186
+===========================================================
+[CPU]  redis 主线程最高CPU(%), top -H 采样:
+  最高单线程%CPU = 98%
+  (若≈100 = 单核打满, 符合文档 line 347)
+[网卡] 吞吐:
+  峰值 RX(服务器收/写方向)= 1283240 kB/s   TX(服务器发/读响应方向)= 2794097 kB/s  (25G≈3125000kB/s)
+  (按 /proc/net/dev 每1s字节差分; 原始 sar 旁证见 sar_net_*.log)
+[Redis] 指标:
+  峰值OPS=9475  过期增量(写放大)=628363  命中/未命中增=673880/56634182
+[客户端] 统计:
+[阶段2结束] MGET=32016 SET=112366 GET=0 APPEND=0 成功=144382 失败=0 超时=0
+[全部结束] MGET=71264 SET=230316 GET=296682 APPEND=11335 成功=609597 失败=0 超时=6
+[全部结束] MGET=71264 SET=230316 GET=296682 APPEND=11335 成功=609597 失败=0 超时=6
+  [客户端RTT(us)] 时延(avg/max 为该阶段发起的同命令单次端到端耗时):
+[阶段2 RTT(us)] MGET avg=18582 max=52035 | SET avg=3282 max=14416 | GET avg=-1 max=-1 | APPEND avg=-1 max=-1
+[阶段3 RTT(us)] MGET avg=30476 max=115607 | SET avg=8125 max=21451 | GET avg=8077 max=22162 | APPEND avg=6453 max=17009
+[全程 RTT(us)] MGET avg=25132 max=115607 | SET avg=5762 max=21451 | GET avg=8077 max=22162 | APPEND avg=6453 max=17009
+  [客户端每秒OPS] 阶段2(30s): MGET=1067/s SET=3745/s
+  [客户端每秒OPS] 阶段3(60s): MGET=654/s SET=1965/s GET=4944/s APPEND=188/s
+  [客户端每秒OPS] 全量(90s): MGET=791/s SET=2559/s GET=3296/s APPEND=125/s
+[bigkeys] 大Key:
+[00.00%] Biggest string found so far '"test:data:normal:62001"' with 1024000 bytes
+[10.06%] Biggest string found so far '"test:data:normal:128401"' with 2048000 bytes
+Sampled 1959 keys in the keyspace!
+Biggest string found '"test:data:normal:128401"' has 2048000 bytes
+[slowlog] 单条大命令耗时(微秒, 第3个integer):
+39464
+1792569827
+1021
+MGET
+test:data:small:284566
+test:data:normal:31412
+test:data:normal:138535
+test:data:normal:142482
+test:data:normal:77121
+test:data:small:323195
+test:data:normal:140809
+test:data:normal:297371
+test:data:normal:18166
+test:data:normal:194078
+test:data:small:149874
+test:data:normal:298636
+test:data:normal:87390
+test:data:normal:152270
+test:data:normal:239756
+test:data:small:317825
+test:data:normal:299858
+test:data:normal:49659
+test:data:normal:386742
+test:data:normal:353632
+test:data:small:193795
+test:data:normal:191614
+test:data:normal:341587
+test:data:normal:3180
+test:data:normal:95052
+test:data:small:332514
+test:data:normal:219436
+test:data:normal:237080
+test:data:normal:42359
+test:data:normal:46408
+... (770 more arguments)
+20.20.21.188:46614
+
+39463
+1792569827
+1008
+
+[分阶段对比] 阶段2 vs 阶段3 (由压测程序写入 test:phase:marker, 采样时打 phase 标签):
+  [阶段2] CPU 最高单线程=97%  平均=96.55%
+  [阶段3] CPU 最高单线程=98%  平均=97.0517%
+  [阶段2] 网卡 峰值RX=832050kB/s  峰值TX=1548829kB/s
+  [阶段3] 网卡 峰值RX=573440kB/s  峰值TX=2794097kB/s
+  [阶段2] OPS峰值=5492  过期增量=101106  命中/未命中增量=174839/23273192  命中率=0.75%
+  [阶段3] OPS峰值=9475  过期增量=113197  命中/未命中增量=462177/29990685  命中率=1.52%
+  [分命令OPS] (INFO commandstats, 按phase切分 calls增量/时长):
+  [阶段2] append OPS≈0 (calls增量=0)
+  [阶段3] append OPS≈188 (calls增量=10943)
+  [阶段2] get    OPS≈1 (calls增量=31)
+  [阶段3] get    OPS≈4925 (calls增量=285687)
+  [阶段2] mget   OPS≈1085 (calls增量=29309)
+  [阶段3] mget   OPS≈650 (calls增量=37707)
+  [阶段3] set    OPS≈1950 (calls增量=113153)
+  [阶段2] set    OPS≈3786 (calls增量=102228)

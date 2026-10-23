@@ -1,0 +1,76 @@
+异常大Key拦截——代码修改说明
+============================================================
+
+固定实验基线
+------------
+MGET总聚合：100
+RTT超时定义：单条命令RTT > 5ms
+线程规模：MGET 20、SET 20、热Key GET 40、APPEND 5
+阶段时长：阶段2 30秒、阶段3 60秒
+大Value：200KB
+
+优化目标：在客户端代码入口阻止APPEND把200KB Value扩大到1MB以上。
+
+具体改动：
+1. 设置Value最大值300KB。
+2. 设置全局APPEND上限20次/秒。
+3. 每次APPEND前先做限流判断，再判断200KB原值加200KB追加内容是否超过300KB。
+4. 超限请求不发送给Redis，并统计限流拒绝和大小拒绝。
+5. MGET、TTL、缓存和Redis配置保持原始基线。
+
+当前负载中200KB+200KB=400KB，因此通过限流的APPEND仍会被大小保护拒绝。
+
+文件
+----
+客户端源码：stress_test_opt2_bigkey.cpp
+主控脚本：185_master_test_opt2_bigkey.sh
+远端可执行文件：stress_test_opt2_bigkey
+
+编译（在186执行）
+-----------------
+cd /home/s30083118/jdredis
+g++ -O3 -std=c++11 stress_test_opt2_bigkey.cpp -o stress_test_opt2_bigkey -pthread -lhiredis
+
+运行（在185执行）
+-----------------
+cd /home/s30083118/jdredis
+bash ./185_master_test_opt2_bigkey.sh --check
+bash ./185_master_test_opt2_bigkey.sh
+
+验收指标
+--------
+1. CPU峰值和阶段平均值。
+2. RX/TX峰值。
+3. MGET、SET、GET、APPEND平均及最大RTT。
+4. RTT超过5ms的命令数。
+5. 主从复制状态、内存增长和网卡丢包。
+
+对照要求
+--------
+除本文明确列出的优化外，其余负载参数与原始代码保持一致。建议原始基线和本版本各运行至少3次，使用中位数比较。
+
+一键运行并采集验收数据
+----------------------
+在185执行：
+cd /home/s30083118/jdredis
+bash ./collect_opt2_metrics.sh
+
+手动模式：
+bash ./collect_opt2_metrics.sh --manual
+
+只做连接和文件预检：
+bash ./collect_opt2_metrics.sh --check
+
+采集脚本会自动运行对应主控脚本，每2秒记录内存、碎片率、主从offset、复制状态和网卡丢包，并在 acceptance_data/<时间戳>/acceptance_summary.txt 生成验收汇总。
+
+
+七、上传到206
+--------------
+执行 bash collect_opt2_metrics.sh 后，默认把本次完整验收目录上传到：
+/home/s30083118/jdredis/acceptance_data/<优化方案>/<运行时间>/
+
+关闭上传：
+UPLOAD_RESULTS=0 bash collect_opt2_metrics.sh
+
+覆盖连接或目录：
+JUMP_HOST=123.60.114.206 JUMP_PORT=10004 JUMP_DIR=/home/s30083118/jdredis/acceptance_data bash collect_opt2_metrics.sh

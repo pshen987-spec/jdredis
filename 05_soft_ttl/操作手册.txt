@@ -1,0 +1,77 @@
+优化5：逻辑TTL操作手册
+===============
+
+统一测试口径
+------------
+MGET总聚合：100 Key
+业务RTT超时判定：5ms；网络读保护超时：100ms
+线程规模：THREAD_SCALE=1
+阶段2：30秒
+阶段3：60秒
+
+步骤1：将三个文件放到185的 /home/s30083118/jdredis/
+---------------------------------------------------------
+185_master_test_opt5_ttl.sh
+collect_opt5_metrics.sh
+stress_test_opt5_ttl.cpp
+
+步骤2：在185把C++源码复制到186
+---------------------------------
+cd /home/s30083118/jdredis
+scp stress_test_opt5_ttl.cpp root@20.20.21.186:/home/s30083118/jdredis/
+
+步骤3：在186重新编译
+-----------------------
+cd /home/s30083118/jdredis
+g++ -O3 -std=c++11 stress_test_opt5_ttl.cpp -o stress_test_opt5_ttl -pthread -lhiredis
+chmod +x stress_test_opt5_ttl
+ls -l /home/s30083118/jdredis/stress_test_opt5_ttl
+
+步骤4：在185准备并预检
+-------------------------
+cd /home/s30083118/jdredis
+sed -i 's/\r$//' 185_master_test_opt5_ttl.sh collect_opt5_metrics.sh
+chmod +x 185_master_test_opt5_ttl.sh collect_opt5_metrics.sh
+bash collect_opt5_metrics.sh --check
+
+预检必须确认185能够登录186，并能找到186上的新编译程序。
+
+步骤5：在185正式执行
+-----------------------
+cd /home/s30083118/jdredis
+bash collect_opt5_metrics.sh
+
+只执行采集脚本。采集脚本会调用主控脚本、启动压测、采集指标并上传结果。
+
+步骤6：检查新测试口径
+-----------------------
+客户端输出必须显示本方案版本标识、“MGET总聚合=100”“RTT超时阈值=5ms”“网络读保护超时=100ms”，验收汇总必须显示RTT超过5ms。
+如果MGET仍显示800，或业务RTT阈值仍显示100ms，说明186上的旧程序没有重新编译，本轮数据无效。网络读保护显示100ms属于正常配置。
+
+步骤7：检查本方案特有结果
+---------------------------
+1. 检查逻辑TTL刷新次数、返回过期旧值次数和刷新锁失败次数。
+2. 逻辑TTL为1秒，Redis真实TTL为10秒，刷新锁为3秒。
+3. 检查热Key是否在阶段3持续可读。
+
+步骤8：检查公共验收指标
+-------------------------
+1. CPU峰值和阶段平均值。
+2. RX/TX峰值。
+3. MGET、SET、GET、APPEND平均及最大RTT。
+4. RTT超过5ms的命令数。
+5. 主从复制状态、内存变化和网卡丢包。
+
+步骤9：检查结果目录
+--------------------
+185本地：
+/home/s30083118/jdredis/acceptance_data/<运行时间>/
+
+206上传目录：
+/home/s30083118/jdredis/acceptance_data/opt5_soft_ttl/<运行时间>/
+
+步骤10：手动停止
+----------------
+在185当前运行窗口按 Ctrl+C。
+如果186客户端没有退出，在186执行：
+pkill -f 'stress_test_opt5_ttl'

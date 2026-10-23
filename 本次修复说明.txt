@@ -1,0 +1,53 @@
+2026-10-22 基线与目录错放问题修复
+=================================
+
+一、问题原因
+------------
+1. 之前把5ms同时当成了业务RTT阈值和网络读超时。超过5ms时连接会被提前切断并频繁重连，导致成功量、失败量和RTT样本都被压测程序本身改变，新基线不可作为正式结果。
+2. 旧版--check只确认186上存在同名可执行文件，不确认二进制版本和参数。旧二进制也可能预检通过。
+3. 旧版Redis停止命令按启动参数匹配进程，但Redis运行后的进程标题不一定保留--port参数，可能未真正停止旧实例。优化6因此可能仍使用基线的1/no配置。
+4. 当前本地脚本的上传目录没有串：基线是baseline_original，优化6是opt6_io_threads。工作区优化6目录中的20261022_153645由日志确认是旧优化6结果；当前工作区没有新的基线轮次。
+
+二、已经修复
+------------
+1. 所有C++统一为MGET总聚合100 Key。
+2. 所有C++统一按RTT严格大于5ms计业务超时。
+3. 网络读保护恢复为100ms，用于收全真实响应；达到100ms才断线重连。
+4. 每个C++增加--identify，只打印版本和参数后退出。
+5. 所有master脚本的--check会登录186并执行--identify；版本或参数不符时不允许开始压测。
+6. 所有collector脚本在上传前再次核对版本、MGET=100、RTT阈值=5ms和网络读保护=100ms；不符时保留本地数据并拒绝上传。
+7. 基线固定上传到acceptance_data/baseline_original/<时间戳>。
+8. 优化6固定上传到acceptance_data/opt6_io_threads/<时间戳>。
+9. 所有Redis主控改为按6379/6380实际PID停止旧实例，并检查新PID确实变化。
+10. 基线强制校验io-threads=1、io-threads-do-reads=no；优化6和全部优化强制校验2/yes。
+
+三、新基线重新执行
+------------------
+将00_baseline下的三个文件放到185的/home/s30083118/jdredis/：
+  185_master_test.sh
+  collect_baseline_metrics.sh
+  stress_test_v2.cpp
+
+在185复制源码到186：
+  cd /home/s30083118/jdredis
+  scp stress_test_v2.cpp root@20.20.21.186:/home/s30083118/jdredis/
+
+在186重新编译并检查身份：
+  cd /home/s30083118/jdredis
+  g++ -O3 -std=c++11 stress_test_v2.cpp -o stress_test_v2 -pthread -lhiredis
+  chmod +x stress_test_v2
+  ./stress_test_v2 --identify
+
+必须看到：
+  === 测试版本: baseline ===
+  MGET总聚合=100  RTT超时阈值=5ms  网络读保护超时=100ms
+
+在185预检并运行：
+  cd /home/s30083118/jdredis
+  sed -i 's/\r$//' 185_master_test.sh collect_baseline_metrics.sh
+  bash collect_baseline_metrics.sh --check
+  bash collect_baseline_metrics.sh
+
+本轮应上传到206：
+  /home/s30083118/jdredis/acceptance_data/baseline_original/<本轮时间戳>/
+

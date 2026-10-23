@@ -1,0 +1,40 @@
+全部场景数据采集说明
+====================
+
+场景范围
+--------
+00 原始代码基线
+01 客户端缓存
+02 大Key拦截
+03 MGET Pipeline
+04 Redis配置微调
+05 软TTL
+06 IO线程
+07 全部优化组合
+
+每个目录都有独立的 collect_*_metrics.sh，可以只运行一个场景。每次运行都会生成独立时间目录，并默认上传到206：
+
+/home/s30083118/jdredis/acceptance_data/<场景名>/<运行时间>/
+
+全部预检
+--------
+bash collect_all_cases.sh --check
+
+依次执行全部8个场景
+-------------------
+bash collect_all_cases.sh
+
+全部使用手动压测模式
+--------------------
+bash collect_all_cases.sh --manual
+
+关闭上传后依次执行
+------------------
+UPLOAD_RESULTS=0 bash collect_all_cases.sh
+
+说明
+----
+1. 全部执行会连续完成8轮完整压测，耗时约为单轮的8倍。
+2. 某一场景失败后，总入口会记录返回码并继续后续场景。
+3. all_cases_summary_<时间>.txt 记录所有场景的执行状态。
+4. 各场景的详细数据仍保存在各自 acceptance_data/<运行时间>/ 下。

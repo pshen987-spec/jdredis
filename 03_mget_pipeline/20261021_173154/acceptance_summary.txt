@@ -1,0 +1,49 @@
+============================================================
+优化验收报告: opt3_mget_pipeline
+运行时间: 20261021_173154
+主控返回码: 0
+采样网卡: enp165s0f0np0
+============================================================
+
+[1] CPU峰值和阶段平均值
+  [阶段2] CPU 最高单线程=97%  平均=95.3605%
+  [阶段3] CPU 最高单线程=98%  平均=96.6775%
+
+[2] RX/TX峰值
+  [阶段2] 网卡 峰值RX=989739kB/s  峰值TX=953132kB/s
+  [阶段3] 网卡 峰值RX=663398kB/s  峰值TX=2363736kB/s
+
+[3] MGET/SET/GET/APPEND平均及最大RTT(us)
+[阶段2 RTT(us)] MGET avg=3134 max=18429 | SET avg=2375 max=8683 | GET avg=-1 max=-1 | APPEND avg=-1 max=-1
+[阶段3 RTT(us)] MGET avg=5956 max=37735 | SET avg=5838 max=30982 | GET avg=6152 max=20515 | APPEND avg=5440 max=18880
+[全程 RTT(us)] MGET avg=4581 max=37735 | SET avg=4209 max=30982 | GET avg=6152 max=20515 | APPEND avg=5440 max=18880
+
+[4] RTT超过100ms的命令数
+阶段2 RTT>100ms=0
+阶段3 RTT>100ms=0
+全程 RTT>100ms=0
+优化特有统计:
+[MGET逻辑请求] 完成=18170 RTT>100ms=0
+[MGET逻辑请求] 完成=37319 RTT>100ms=75
+
+[5] 分阶段内存、复制差值和网卡丢包增量
+阶段2: 内存开始=1264803432 结束=1433159936 增长=168356504 bytes 峰值=74015588600 碎片率末值=1.10
+阶段2: 最大主从offset差=2868487 bytes 复制链路异常采样=0
+阶段2: RX丢包增量=0 TX丢包增量=0 RX错误增量=0 TX错误增量=0
+阶段3: 内存开始=1198673208 结束=4811654464 增长=3612981256 bytes 峰值=74015588600 碎片率末值=0.67
+阶段3: 最大主从offset差=3892792 bytes 复制链路异常采样=0
+阶段3: RX丢包增量=0 TX丢包增量=0 RX错误增量=0 TX错误增量=0
+
+[6] 测试结束后的主从状态
+role:master
+connected_slaves:1
+master_repl_offset:2805521842313
+role:slave
+master_link_status:up
+slave_repl_offset:2805521842313
+
+[7] 本版本Redis配置证据
+
+原始采样: /home/s30083118/jdredis/acceptance_data/20261021_173154/acceptance_samples.csv
+主控结果: /home/s30083118/jdredis/acceptance_data/20261021_173154/results/result_20261021_173154.txt
+客户端输出: /home/s30083118/jdredis/acceptance_data/20261021_173154/logs/client_out_20261021_173154.log

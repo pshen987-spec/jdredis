@@ -1,0 +1,21 @@
+Warning: Permanently added '20.20.21.186' (ED25519) to the list of known hosts.
+
+Authorized users only. All activities may be monitored and reported.
+=== 内存预估(约) ===
+  预热数据: 61.0352 GB (大key) + ~78.125 MB (小key)
+  APPEND肥大Key: ~2929.69 MB
+  要求 Redis maxmemory > 上述总和(40w数据约需>=80G, 148可用), 且 maxmemory-policy=noeviction
+  [线程] 阶段2/3 线程数固定为严格文档规模(THREAD_SCALE=1), 无需命令行设置
+
+=== 准备测试数据 ===
+=== 阶段1: 灌入 400000 个key (TTL=1s) ===
+=== 预热完成 ===
+=== 阶段2: 20 x MGET(800keys) + 20 x SET 持续 30s ===
+[阶段2结束] MGET=32016 SET=112366 GET=0 APPEND=0 成功=144382 失败=0 超时=0
+[阶段2 RTT(us)] MGET avg=18582 max=52035 | SET avg=3282 max=14416 | GET avg=-1 max=-1 | APPEND avg=-1 max=-1
+=== 阶段3: 注入热Key + 恶意APPEND, 持续 60s ===
+=== 停止回收 ===
+[全部结束] MGET=71264 SET=230316 GET=296682 APPEND=11335 成功=609597 失败=0 超时=6
+[阶段3 RTT(us)] MGET avg=30476 max=115607 | SET avg=8125 max=21451 | GET avg=8077 max=22162 | APPEND avg=6453 max=17009
+[全程 RTT(us)] MGET avg=25132 max=115607 | SET avg=5762 max=21451 | GET avg=8077 max=22162 | APPEND avg=6453 max=17009
+=== 测试结束 ===

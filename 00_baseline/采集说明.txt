@@ -1,0 +1,36 @@
+原始基线验收数据采集
+====================
+
+用途
+----
+不启用任何优化，调用项目根目录下原始的 185_master_test.sh，采集与7种优化版本相同口径的验收数据，作为对照组。
+
+运行
+----
+bash collect_baseline_metrics.sh
+
+只做环境预检：
+bash collect_baseline_metrics.sh --check
+
+手动压测模式：
+bash collect_baseline_metrics.sh --manual
+
+采集指标
+--------
+1. CPU峰值和阶段平均值。
+2. RX/TX峰值。
+3. MGET、SET、GET、APPEND平均及最大RTT。
+4. RTT超过5ms的命令数。
+5. 主从复制状态、内存增长和网卡丢包。
+
+本地归档
+--------
+acceptance_data/<运行时间>/
+
+上传到206
+---------
+默认上传到：
+/home/s30083118/jdredis/acceptance_data/baseline_original/<运行时间>/
+
+关闭上传：
+UPLOAD_RESULTS=0 bash collect_baseline_metrics.sh

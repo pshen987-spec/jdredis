@@ -1,0 +1,136 @@
+Redis优化实验——单次压测操作步骤
+================================
+
+以下以“优化1：客户端缓存”为例。
+
+
+步骤1：在206分发文件
+=====================
+
+把客户端源码传到186：
+
+scp /home/s30083118/jdredis/优化代码/01_client_cache/stress_test_opt1_cache.cpp \
+root@20.20.21.186:/home/s30083118/jdredis/
+
+把主控脚本和采集脚本传到185：
+
+scp /home/s30083118/jdredis/优化代码/01_client_cache/185_master_test_opt1_cache.sh \
+    /home/s30083118/jdredis/优化代码/01_client_cache/collect_opt1_metrics.sh \
+root@20.20.21.185:/home/s30083118/jdredis/
+
+
+步骤2：登录186编译客户端程序
+=============================
+
+ssh root@20.20.21.186
+
+cd /home/s30083118/jdredis
+
+g++ -O3 -std=c++11 stress_test_opt1_cache.cpp \
+-o stress_test_opt1_cache \
+-pthread -lhiredis
+
+检查编译结果：
+
+ls -lh stress_test_opt1_cache
+test -x stress_test_opt1_cache && echo "编译成功"
+
+退出186：
+
+exit
+
+
+步骤3：登录185处理脚本
+=======================
+
+ssh root@20.20.21.185
+
+cd /home/s30083118/jdredis
+
+sed -i 's/\r$//' 185_master_test_opt1_cache.sh collect_opt1_metrics.sh
+chmod +x 185_master_test_opt1_cache.sh collect_opt1_metrics.sh
+
+
+步骤4：在185进行预检
+=====================
+
+cd /home/s30083118/jdredis
+bash collect_opt1_metrics.sh --check
+
+需要确认输出中包含：
+
+压测机连通, 压测程序已编译 -> 全自动
+Redis服务IP=20.20.21.185
+目标压测机=20.20.21.186
+模式=auto
+
+如果提示找不到压测程序，登录186检查：
+
+ssh root@20.20.21.186 \
+"ls -l /home/s30083118/jdredis/stress_test_opt1_cache"
+
+
+步骤5：在185正式执行压测
+=========================
+
+cd /home/s30083118/jdredis
+bash collect_opt1_metrics.sh
+
+只需要执行采集脚本，不需要另外运行185_master_test_opt1_cache.sh。
+
+正常完成时应看到：
+
+===== 验收采集完成 =====
+[ok] 本次完整验收目录已上传并校验
+
+
+步骤6：在185查看本次结果
+=========================
+
+cd /home/s30083118/jdredis
+
+LATEST=$(ls -1dt acceptance_data/* | head -1)
+echo "$LATEST"
+find "$LATEST" -maxdepth 2 -type f
+cat "$LATEST/acceptance_summary.txt"
+
+
+步骤7：回到206检查上传结果
+===========================
+
+退出185：
+
+exit
+
+在206执行：
+
+LATEST=$(ls -1dt \
+/home/s30083118/jdredis/acceptance_data/opt1_client_cache/* \
+2>/dev/null | head -1)
+
+echo "$LATEST"
+find "$LATEST" -maxdepth 2 -type f
+cat "$LATEST/acceptance_summary.txt"
+
+检查关键文件：
+
+test -s "$LATEST/acceptance_summary.txt" \
+&& test -s "$LATEST/acceptance_samples.csv" \
+&& echo "本次压测数据完整"
+
+
+步骤8：出现上传失败时的处理
+===========================
+
+先确认185上的本地结果仍然存在：
+
+cd /home/s30083118/jdredis
+LATEST=$(ls -1dt acceptance_data/* | head -1)
+find "$LATEST" -maxdepth 2 -type f
+
+确认185能够访问206的10004端口：
+
+ssh -p 10004 root@123.60.114.206 "echo 206连接正常"
+
+本地数据不会因为上传失败被删除。
+

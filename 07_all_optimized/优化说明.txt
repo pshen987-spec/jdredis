@@ -1,0 +1,83 @@
+全部优化组合——代码修改说明
+============================================================
+
+固定实验基线
+------------
+MGET总聚合：100
+RTT超时定义：单条命令RTT > 5ms
+线程规模：MGET 20、SET 20、热Key GET 40、APPEND 5
+阶段时长：阶段2 30秒、阶段3 60秒
+大Value：200KB
+
+优化目标：组合六种方案，验证最终整体效果。
+
+C++侧改动：
+1. 500ms热Key本地缓存和single-flight，默认约80%业务GET由本地缓存服务，约20%强制回源Redis。
+2. APPEND全局20次/秒限流。
+3. Value超过300KB直接拒绝。
+4. MGET总量100，拆为MGET(10)，Pipeline深度8。
+5. 热Key逻辑TTL 1秒、Redis真实TTL 10秒、刷新锁3秒。
+6. 分别统计本地缓存GET、Redis回源GET和业务GET综合RTT，并统计业务GET超过5ms的次数和比例。
+
+Redis侧改动：
+1. 三项lazyfree。
+2. normal客户端输出缓冲区512mb/256mb/60。
+3. io-threads 2。
+4. io-threads-do-reads yes。
+
+组合版用于与原始基线做最终比较，不能替代六个单点版本的归因实验。
+
+文件
+----
+客户端源码：stress_test_opt7_all.cpp
+主控脚本：185_master_test_opt7_all.sh
+远端可执行文件：stress_test_opt7_all
+
+编译（在186执行）
+-----------------
+cd /home/s30083118/jdredis
+g++ -O3 -std=c++11 stress_test_opt7_all.cpp -o stress_test_opt7_all -pthread -lhiredis
+
+运行（在185执行）
+-----------------
+cd /home/s30083118/jdredis
+bash ./185_master_test_opt7_all.sh --check
+bash ./185_master_test_opt7_all.sh
+
+验收指标
+--------
+1. CPU峰值和阶段平均值。
+2. RX/TX峰值。
+3. MGET、SET、GET、APPEND平均及最大RTT。
+4. RTT超过5ms的命令数。
+5. 主从复制状态、内存增长和网卡丢包。
+
+对照要求
+--------
+除本文明确列出的优化外，其余负载参数与原始代码保持一致。建议原始基线和本版本各运行至少3次，使用中位数比较。
+
+一键运行并采集验收数据
+----------------------
+在185执行：
+cd /home/s30083118/jdredis
+bash ./collect_opt7_metrics.sh
+
+手动模式：
+bash ./collect_opt7_metrics.sh --manual
+
+只做连接和文件预检：
+bash ./collect_opt7_metrics.sh --check
+
+采集脚本会自动运行对应主控脚本，每2秒记录内存、碎片率、主从offset、复制状态和网卡丢包，并在 acceptance_data/<时间戳>/acceptance_summary.txt 生成验收汇总。
+
+
+七、上传到206
+--------------
+执行 bash collect_opt7_metrics.sh 后，默认把本次完整验收目录上传到：
+/home/s30083118/jdredis/acceptance_data/<优化方案>/<运行时间>/
+
+关闭上传：
+UPLOAD_RESULTS=0 bash collect_opt7_metrics.sh
+
+覆盖连接或目录：
+JUMP_HOST=123.60.114.206 JUMP_PORT=10004 JUMP_DIR=/home/s30083118/jdredis/acceptance_data bash collect_opt7_metrics.sh

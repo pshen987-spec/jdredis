@@ -1,0 +1,990 @@
+==== pidstat-snap 09:59:28 phase= ====
+Linux 6.6.12+ (openGauss185) 	10/23/2026 	_aarch64_	(256 CPU)
+
+09:59:28 AM   UID      TGID       TID    %usr %system  %guest   %wait    %CPU   CPU  Command
+09:59:29 AM     0   2391906         -    0.00    0.00    0.00    0.00    0.00     1  redis-server
+09:59:29 AM     0         -   2391906    0.00    0.00    0.00    0.00    0.00     1  |__redis-server
+09:59:29 AM     0         -   2391908    0.00    0.00    0.00    0.00    0.00     0  |__bio_close_file
+09:59:29 AM     0         -   2391909    0.00    0.00    0.00    0.00    0.00     0  |__bio_aof
+09:59:29 AM     0         -   2391910    0.00    0.00    0.00    0.00    0.00     0  |__bio_lazy_free
+09:59:29 AM     0         -   2391911    0.00    0.00    0.00    0.00    0.00     1  |__jemalloc_bg_thd
+09:59:29 AM     0         -   2391912    0.00    0.00    0.00    0.00    0.00     0  |__jemalloc_bg_thd
+Average:        0   2391906         -    0.00    0.00    0.00    0.00    0.00     -  redis-server
+Average:        0         -   2391906    0.00    0.00    0.00    0.00    0.00     -  |__redis-server
+Average:        0         -   2391908    0.00    0.00    0.00    0.00    0.00     -  |__bio_close_file
+Average:        0         -   2391909    0.00    0.00    0.00    0.00    0.00     -  |__bio_aof
+Average:        0         -   2391910    0.00    0.00    0.00    0.00    0.00     -  |__bio_lazy_free
+Average:        0         -   2391911    0.00    0.00    0.00    0.00    0.00     -  |__jemalloc_bg_thd
+Average:        0         -   2391912    0.00    0.00    0.00    0.00    0.00     -  |__jemalloc_bg_thd
+==== pidstat-snap 09:59:31 phase= ====
+Linux 6.6.12+ (openGauss185) 	10/23/2026 	_aarch64_	(256 CPU)
+
+09:59:31 AM   UID      TGID       TID    %usr %system  %guest   %wait    %CPU   CPU  Command
+09:59:32 AM     0   2391906         -    0.00    0.00    0.00    0.00    0.00     1  redis-server
+09:59:32 AM     0         -   2391906    0.00    0.00    0.00    0.00    0.00     1  |__redis-server
+09:59:32 AM     0         -   2391908    0.00    0.00    0.00    0.00    0.00     0  |__bio_close_file
+09:59:32 AM     0         -   2391909    0.00    0.00    0.00    0.00    0.00     0  |__bio_aof
+09:59:32 AM     0         -   2391910    0.00    0.00    0.00    0.00    0.00     0  |__bio_lazy_free
+09:59:32 AM     0         -   2391911    0.00    0.00    0.00    0.00    0.00     1  |__jemalloc_bg_thd
+09:59:32 AM     0         -   2391912    0.00    0.00    0.00    0.00    0.00     0  |__jemalloc_bg_thd
+Average:        0   2391906         -    0.00    0.00    0.00    0.00    0.00     -  redis-server
+Average:        0         -   2391906    0.00    0.00    0.00    0.00    0.00     -  |__redis-server
+Average:        0         -   2391908    0.00    0.00    0.00    0.00    0.00     -  |__bio_close_file
+Average:        0         -   2391909    0.00    0.00    0.00    0.00    0.00     -  |__bio_aof
+Average:        0         -   2391910    0.00    0.00    0.00    0.00    0.00     -  |__bio_lazy_free
+Average:        0         -   2391911    0.00    0.00    0.00    0.00    0.00     -  |__jemalloc_bg_thd
+Average:        0         -   2391912    0.00    0.00    0.00    0.00    0.00     -  |__jemalloc_bg_thd
+==== pidstat-snap 09:59:34 phase= ====
+Linux 6.6.12+ (openGauss185) 	10/23/2026 	_aarch64_	(256 CPU)
+
+09:59:34 AM   UID      TGID       TID    %usr %system  %guest   %wait    %CPU   CPU  Command
+09:59:35 AM     0   2391906         -   10.00   56.00    0.00    1.00   66.00     1  redis-server
+09:59:35 AM     0         -   2391906   10.00   56.00    0.00    1.00   66.00     1  |__redis-server
+09:59:35 AM     0         -   2391908    0.00    0.00    0.00    0.00    0.00     0  |__bio_close_file
+09:59:35 AM     0         -   2391909    0.00    0.00    0.00    0.00    0.00     0  |__bio_aof
+09:59:35 AM     0         -   2391910    0.00    0.00    0.00    0.00    0.00     0  |__bio_lazy_free
+09:59:35 AM     0         -   2391911    0.00    0.00    0.00    0.00    0.00     0  |__jemalloc_bg_thd
+09:59:35 AM     0         -   2391912    0.00    0.00    0.00    0.00    0.00     0  |__jemalloc_bg_thd
+Average:        0   2391906         -   10.00   56.00    0.00    1.00   66.00     -  redis-server
+Average:        0         -   2391906   10.00   56.00    0.00    1.00   66.00     -  |__redis-server
+Average:        0         -   2391908    0.00    0.00    0.00    0.00    0.00     -  |__bio_close_file
+Average:        0         -   2391909    0.00    0.00    0.00    0.00    0.00     -  |__bio_aof
+Average:        0         -   2391910    0.00    0.00    0.00    0.00    0.00     -  |__bio_lazy_free
+Average:        0         -   2391911    0.00    0.00    0.00    0.00    0.00     -  |__jemalloc_bg_thd
+Average:        0         -   2391912    0.00    0.00    0.00    0.00    0.00     -  |__jemalloc_bg_thd
+==== pidstat-snap 09:59:37 phase= ====
+Linux 6.6.12+ (openGauss185) 	10/23/2026 	_aarch64_	(256 CPU)
+
+09:59:37 AM   UID      TGID       TID    %usr %system  %guest   %wait    %CPU   CPU  Command
+09:59:38 AM     0   2391906         -   13.00   44.00    0.00    0.00   57.00     1  redis-server
+09:59:38 AM     0         -   2391906   13.00   44.00    0.00    0.00   57.00     1  |__redis-server
+09:59:38 AM     0         -   2391908    0.00    0.00    0.00    0.00    0.00     0  |__bio_close_file
+09:59:38 AM     0         -   2391909    0.00    0.00    0.00    0.00    0.00     0  |__bio_aof
+09:59:38 AM     0         -   2391910    0.00    0.00    0.00    0.00    0.00     0  |__bio_lazy_free
+09:59:38 AM     0         -   2391911    0.00    0.00    0.00    0.00    0.00     0  |__jemalloc_bg_thd
+09:59:38 AM     0         -   2391912    0.00    0.00    0.00    0.00    0.00     0  |__jemalloc_bg_thd
+Average:        0   2391906         -   13.00   44.00    0.00    0.00   57.00     -  redis-server
+Average:        0         -   2391906   13.00   44.00    0.00    0.00   57.00     -  |__redis-server
+Average:        0         -   2391908    0.00    0.00    0.00    0.00    0.00     -  |__bio_close_file
+Average:        0         -   2391909    0.00    0.00    0.00    0.00    0.00     -  |__bio_aof
+Average:        0         -   2391910    0.00    0.00    0.00    0.00    0.00     -  |__bio_lazy_free
+Average:        0         -   2391911    0.00    0.00    0.00    0.00    0.00     -  |__jemalloc_bg_thd
+Average:        0         -   2391912    0.00    0.00    0.00    0.00    0.00     -  |__jemalloc_bg_thd
+==== pidstat-snap 09:59:40 phase= ====
+Linux 6.6.12+ (openGauss185) 	10/23/2026 	_aarch64_	(256 CPU)
+
+09:59:40 AM   UID      TGID       TID    %usr %system  %guest   %wait    %CPU   CPU  Command
+09:59:41 AM     0   2391906         -   10.00   44.00    0.00    1.00   54.00     1  redis-server
+09:59:41 AM     0         -   2391906   11.00   43.00    0.00    1.00   54.00     1  |__redis-server
+09:59:41 AM     0         -   2391908    0.00    0.00    0.00    0.00    0.00     0  |__bio_close_file
+09:59:41 AM     0         -   2391909    0.00    0.00    0.00    0.00    0.00     0  |__bio_aof
+09:59:41 AM     0         -   2391910    0.00    0.00    0.00    0.00    0.00     0  |__bio_lazy_free
+09:59:41 AM     0         -   2391911    0.00    0.00    0.00    0.00    0.00     0  |__jemalloc_bg_thd
+09:59:41 AM     0         -   2391912    0.00    0.00    0.00    0.00    0.00     0  |__jemalloc_bg_thd
+Average:        0   2391906         -   10.00   44.00    0.00    1.00   54.00     -  redis-server
+Average:        0         -   2391906   11.00   43.00    0.00    1.00   54.00     -  |__redis-server
+Average:        0         -   2391908    0.00    0.00    0.00    0.00    0.00     -  |__bio_close_file
+Average:        0         -   2391909    0.00    0.00    0.00    0.00    0.00     -  |__bio_aof
+Average:        0         -   2391910    0.00    0.00    0.00    0.00    0.00     -  |__bio_lazy_free
+Average:        0         -   2391911    0.00    0.00    0.00    0.00    0.00     -  |__jemalloc_bg_thd
+Average:        0         -   2391912    0.00    0.00    0.00    0.00    0.00     -  |__jemalloc_bg_thd
+==== pidstat-snap 09:59:43 phase= ====
+Linux 6.6.12+ (openGauss185) 	10/23/2026 	_aarch64_	(256 CPU)
+
+09:59:43 AM   UID      TGID       TID    %usr %system  %guest   %wait    %CPU   CPU  Command
+09:59:44 AM     0   2391906         -   11.00   47.00    0.00    0.00   58.00     1  redis-server
+09:59:44 AM     0         -   2391906   11.00   47.00    0.00    0.00   58.00     1  |__redis-server
+09:59:44 AM     0         -   2391908    0.00    0.00    0.00    0.00    0.00     0  |__bio_close_file
+09:59:44 AM     0         -   2391909    0.00    0.00    0.00    0.00    0.00     0  |__bio_aof
+09:59:44 AM     0         -   2391910    0.00    0.00    0.00    0.00    0.00     0  |__bio_lazy_free
+09:59:44 AM     0         -   2391911    0.00    0.00    0.00    0.00    0.00     1  |__jemalloc_bg_thd
+09:59:44 AM     0         -   2391912    0.00    0.00    0.00    0.00    0.00     0  |__jemalloc_bg_thd
+Average:        0   2391906         -   11.00   47.00    0.00    0.00   58.00     -  redis-server
+Average:        0         -   2391906   11.00   47.00    0.00    0.00   58.00     -  |__redis-server
+Average:        0         -   2391908    0.00    0.00    0.00    0.00    0.00     -  |__bio_close_file
+Average:        0         -   2391909    0.00    0.00    0.00    0.00    0.00     -  |__bio_aof
+Average:        0         -   2391910    0.00    0.00    0.00    0.00    0.00     -  |__bio_lazy_free
+Average:        0         -   2391911    0.00    0.00    0.00    0.00    0.00     -  |__jemalloc_bg_thd
+Average:        0         -   2391912    0.00    0.00    0.00    0.00    0.00     -  |__jemalloc_bg_thd
+==== pidstat-snap 09:59:46 phase= ====
+Linux 6.6.12+ (openGauss185) 	10/23/2026 	_aarch64_	(256 CPU)
+
+09:59:46 AM   UID      TGID       TID    %usr %system  %guest   %wait    %CPU   CPU  Command
+09:59:47 AM     0   2391906         -   12.00   44.00    0.00    1.00   56.00     1  redis-server
+09:59:47 AM     0         -   2391906   12.00   44.00    0.00    1.00   56.00     1  |__redis-server
+09:59:47 AM     0         -   2391908    0.00    0.00    0.00    0.00    0.00     0  |__bio_close_file
+09:59:47 AM     0         -   2391909    0.00    0.00    0.00    0.00    0.00     0  |__bio_aof
+09:59:47 AM     0         -   2391910    0.00    0.00    0.00    0.00    0.00     0  |__bio_lazy_free
+09:59:47 AM     0         -   2391911    0.00    0.00    0.00    0.00    0.00     0  |__jemalloc_bg_thd
+09:59:47 AM     0         -   2391912    0.00    0.00    0.00    0.00    0.00     0  |__jemalloc_bg_thd
+Average:        0   2391906         -   12.00   44.00    0.00    1.00   56.00     -  redis-server
+Average:        0         -   2391906   12.00   44.00    0.00    1.00   56.00     -  |__redis-server
+Average:        0         -   2391908    0.00    0.00    0.00    0.00    0.00     -  |__bio_close_file
+Average:        0         -   2391909    0.00    0.00    0.00    0.00    0.00     -  |__bio_aof
+Average:        0         -   2391910    0.00    0.00    0.00    0.00    0.00     -  |__bio_lazy_free
+Average:        0         -   2391911    0.00    0.00    0.00    0.00    0.00     -  |__jemalloc_bg_thd
+Average:        0         -   2391912    0.00    0.00    0.00    0.00    0.00     -  |__jemalloc_bg_thd
+==== pidstat-snap 09:59:49 phase= ====
+Linux 6.6.12+ (openGauss185) 	10/23/2026 	_aarch64_	(256 CPU)
+
+09:59:49 AM   UID      TGID       TID    %usr %system  %guest   %wait    %CPU   CPU  Command
+09:59:50 AM     0   2391906         -   12.00   43.00    0.00    1.00   55.00     0  redis-server
+09:59:50 AM     0         -   2391906   12.00   44.00    0.00    1.00   56.00     0  |__redis-server
+09:59:50 AM     0         -   2391908    0.00    0.00    0.00    0.00    0.00     0  |__bio_close_file
+09:59:50 AM     0         -   2391909    0.00    0.00    0.00    0.00    0.00     0  |__bio_aof
+09:59:50 AM     0         -   2391910    0.00    0.00    0.00    0.00    0.00     0  |__bio_lazy_free
+09:59:50 AM     0         -   2391911    0.00    0.00    0.00    0.00    0.00     0  |__jemalloc_bg_thd
+09:59:50 AM     0         -   2391912    0.00    0.00    0.00    0.00    0.00     0  |__jemalloc_bg_thd
+Average:        0   2391906         -   12.00   43.00    0.00    1.00   55.00     -  redis-server
+Average:        0         -   2391906   12.00   44.00    0.00    1.00   56.00     -  |__redis-server
+Average:        0         -   2391908    0.00    0.00    0.00    0.00    0.00     -  |__bio_close_file
+Average:        0         -   2391909    0.00    0.00    0.00    0.00    0.00     -  |__bio_aof
+Average:        0         -   2391910    0.00    0.00    0.00    0.00    0.00     -  |__bio_lazy_free
+Average:        0         -   2391911    0.00    0.00    0.00    0.00    0.00     -  |__jemalloc_bg_thd
+Average:        0         -   2391912    0.00    0.00    0.00    0.00    0.00     -  |__jemalloc_bg_thd
+==== pidstat-snap 09:59:53 phase= ====
+Linux 6.6.12+ (openGauss185) 	10/23/2026 	_aarch64_	(256 CPU)
+
+09:59:52 AM   UID      TGID       TID    %usr %system  %guest   %wait    %CPU   CPU  Command
+09:59:53 AM     0   2391906         -   13.00   44.00    0.00    0.00   57.00     0  redis-server
+09:59:53 AM     0         -   2391906   12.00   44.00    0.00    0.00   56.00     0  |__redis-server
+09:59:53 AM     0         -   2391908    0.00    0.00    0.00    0.00    0.00     0  |__bio_close_file
+09:59:53 AM     0         -   2391909    0.00    0.00    0.00    0.00    0.00     0  |__bio_aof
+09:59:53 AM     0         -   2391910    0.00    0.00    0.00    0.00    0.00     0  |__bio_lazy_free
+09:59:53 AM     0         -   2391911    0.00    0.00    0.00    0.00    0.00     0  |__jemalloc_bg_thd
+09:59:53 AM     0         -   2391912    0.00    0.00    0.00    0.00    0.00     0  |__jemalloc_bg_thd
+Average:        0   2391906         -   13.00   44.00    0.00    0.00   57.00     -  redis-server
+Average:        0         -   2391906   12.00   44.00    0.00    0.00   56.00     -  |__redis-server
+Average:        0         -   2391908    0.00    0.00    0.00    0.00    0.00     -  |__bio_close_file
+Average:        0         -   2391909    0.00    0.00    0.00    0.00    0.00     -  |__bio_aof
+Average:        0         -   2391910    0.00    0.00    0.00    0.00    0.00     -  |__bio_lazy_free
+Average:        0         -   2391911    0.00    0.00    0.00    0.00    0.00     -  |__jemalloc_bg_thd
+Average:        0         -   2391912    0.00    0.00    0.00    0.00    0.00     -  |__jemalloc_bg_thd
+==== pidstat-snap 09:59:56 phase= ====
+Linux 6.6.12+ (openGauss185) 	10/23/2026 	_aarch64_	(256 CPU)
+
+09:59:56 AM   UID      TGID       TID    %usr %system  %guest   %wait    %CPU   CPU  Command
+09:59:57 AM     0   2391906         -   10.00   45.00    0.00    0.00   55.00     0  redis-server
+09:59:57 AM     0         -   2391906   11.00   46.00    0.00    0.00   57.00     0  |__redis-server
+09:59:57 AM     0         -   2391908    0.00    0.00    0.00    0.00    0.00     0  |__bio_close_file
+09:59:57 AM     0         -   2391909    0.00    0.00    0.00    0.00    0.00     0  |__bio_aof
+09:59:57 AM     0         -   2391910    0.00    0.00    0.00    0.00    0.00     0  |__bio_lazy_free
+09:59:57 AM     0         -   2391911    0.00    0.00    0.00    0.00    0.00     1  |__jemalloc_bg_thd
+09:59:57 AM     0         -   2391912    0.00    0.00    0.00    0.00    0.00     0  |__jemalloc_bg_thd
+Average:        0   2391906         -   10.00   45.00    0.00    0.00   55.00     -  redis-server
+Average:        0         -   2391906   11.00   46.00    0.00    0.00   57.00     -  |__redis-server
+Average:        0         -   2391908    0.00    0.00    0.00    0.00    0.00     -  |__bio_close_file
+Average:        0         -   2391909    0.00    0.00    0.00    0.00    0.00     -  |__bio_aof
+Average:        0         -   2391910    0.00    0.00    0.00    0.00    0.00     -  |__bio_lazy_free
+Average:        0         -   2391911    0.00    0.00    0.00    0.00    0.00     -  |__jemalloc_bg_thd
+Average:        0         -   2391912    0.00    0.00    0.00    0.00    0.00     -  |__jemalloc_bg_thd
+==== pidstat-snap 09:59:59 phase= ====
+Linux 6.6.12+ (openGauss185) 	10/23/2026 	_aarch64_	(256 CPU)
+
+09:59:59 AM   UID      TGID       TID    %usr %system  %guest   %wait    %CPU   CPU  Command
+10:00:00 AM     0   2391906         -   10.00   45.00    0.00    1.00   55.00     0  redis-server
+10:00:00 AM     0         -   2391906   10.00   46.00    0.00    1.00   56.00     0  |__redis-server
+10:00:00 AM     0         -   2391908    0.00    0.00    0.00    0.00    0.00     0  |__bio_close_file
+10:00:00 AM     0         -   2391909    0.00    0.00    0.00    0.00    0.00     0  |__bio_aof
+10:00:00 AM     0         -   2391910    0.00    0.00    0.00    0.00    0.00     0  |__bio_lazy_free
+10:00:00 AM     0         -   2391911    0.00    0.00    0.00    0.00    0.00     0  |__jemalloc_bg_thd
+10:00:00 AM     0         -   2391912    0.00    0.00    0.00    0.00    0.00     0  |__jemalloc_bg_thd
+Average:        0   2391906         -   10.00   45.00    0.00    1.00   55.00     -  redis-server
+Average:        0         -   2391906   10.00   46.00    0.00    1.00   56.00     -  |__redis-server
+Average:        0         -   2391908    0.00    0.00    0.00    0.00    0.00     -  |__bio_close_file
+Average:        0         -   2391909    0.00    0.00    0.00    0.00    0.00     -  |__bio_aof
+Average:        0         -   2391910    0.00    0.00    0.00    0.00    0.00     -  |__bio_lazy_free
+Average:        0         -   2391911    0.00    0.00    0.00    0.00    0.00     -  |__jemalloc_bg_thd
+Average:        0         -   2391912    0.00    0.00    0.00    0.00    0.00     -  |__jemalloc_bg_thd
+==== pidstat-snap 10:00:02 phase= ====
+Linux 6.6.12+ (openGauss185) 	10/23/2026 	_aarch64_	(256 CPU)
+
+10:00:02 AM   UID      TGID       TID    %usr %system  %guest   %wait    %CPU   CPU  Command
+10:00:03 AM     0   2391906         -   12.00   46.00    0.00    0.00   58.00     1  redis-server
+10:00:03 AM     0         -   2391906   12.00   45.00    0.00    0.00   57.00     1  |__redis-server
+10:00:03 AM     0         -   2391908    0.00    0.00    0.00    0.00    0.00     0  |__bio_close_file
+10:00:03 AM     0         -   2391909    0.00    0.00    0.00    0.00    0.00     0  |__bio_aof
+10:00:03 AM     0         -   2391910    0.00    0.00    0.00    0.00    0.00     0  |__bio_lazy_free
+10:00:03 AM     0         -   2391911    0.00    0.00    0.00    0.00    0.00     1  |__jemalloc_bg_thd
+10:00:03 AM     0         -   2391912    0.00    0.00    0.00    0.00    0.00     0  |__jemalloc_bg_thd
+Average:        0   2391906         -   12.00   46.00    0.00    0.00   58.00     -  redis-server
+Average:        0         -   2391906   12.00   45.00    0.00    0.00   57.00     -  |__redis-server
+Average:        0         -   2391908    0.00    0.00    0.00    0.00    0.00     -  |__bio_close_file
+Average:        0         -   2391909    0.00    0.00    0.00    0.00    0.00     -  |__bio_aof
+Average:        0         -   2391910    0.00    0.00    0.00    0.00    0.00     -  |__bio_lazy_free
+Average:        0         -   2391911    0.00    0.00    0.00    0.00    0.00     -  |__jemalloc_bg_thd
+Average:        0         -   2391912    0.00    0.00    0.00    0.00    0.00     -  |__jemalloc_bg_thd
+==== pidstat-snap 10:00:05 phase= ====
+Linux 6.6.12+ (openGauss185) 	10/23/2026 	_aarch64_	(256 CPU)
+
+10:00:05 AM   UID      TGID       TID    %usr %system  %guest   %wait    %CPU   CPU  Command
+10:00:06 AM     0   2391906         -   13.00   48.00    0.00    0.00   61.00     1  redis-server
+10:00:06 AM     0         -   2391906   13.00   46.00    0.00    0.00   59.00     1  |__redis-server
+10:00:06 AM     0         -   2391908    0.00    0.00    0.00    0.00    0.00     0  |__bio_close_file
+10:00:06 AM     0         -   2391909    0.00    0.00    0.00    0.00    0.00     0  |__bio_aof
+10:00:06 AM     0         -   2391910    0.00    0.00    0.00    0.00    0.00     0  |__bio_lazy_free
+10:00:06 AM     0         -   2391911    0.00    1.00    0.00    0.00    1.00     1  |__jemalloc_bg_thd
+10:00:06 AM     0         -   2391912    0.00    0.00    0.00    0.00    0.00     0  |__jemalloc_bg_thd
+Average:        0   2391906         -   13.00   48.00    0.00    0.00   61.00     -  redis-server
+Average:        0         -   2391906   13.00   46.00    0.00    0.00   59.00     -  |__redis-server
+Average:        0         -   2391908    0.00    0.00    0.00    0.00    0.00     -  |__bio_close_file
+Average:        0         -   2391909    0.00    0.00    0.00    0.00    0.00     -  |__bio_aof
+Average:        0         -   2391910    0.00    0.00    0.00    0.00    0.00     -  |__bio_lazy_free
+Average:        0         -   2391911    0.00    1.00    0.00    0.00    1.00     -  |__jemalloc_bg_thd
+Average:        0         -   2391912    0.00    0.00    0.00    0.00    0.00     -  |__jemalloc_bg_thd
+==== pidstat-snap 10:00:08 phase= ====
+Linux 6.6.12+ (openGauss185) 	10/23/2026 	_aarch64_	(256 CPU)
+
+10:00:08 AM   UID      TGID       TID    %usr %system  %guest   %wait    %CPU   CPU  Command
+10:00:09 AM     0   2391906         -   12.87   42.57    0.00    0.00   55.45     0  redis-server
+10:00:09 AM     0         -   2391906   12.87   42.57    0.00    0.00   55.45     0  |__redis-server
+10:00:09 AM     0         -   2391908    0.00    0.00    0.00    0.00    0.00     0  |__bio_close_file
+10:00:09 AM     0         -   2391909    0.00    0.00    0.00    0.00    0.00     0  |__bio_aof
+10:00:09 AM     0         -   2391910    0.00    0.00    0.00    0.00    0.00     0  |__bio_lazy_free
+10:00:09 AM     0         -   2391911    0.00    0.00    0.00    0.00    0.00     1  |__jemalloc_bg_thd
+10:00:09 AM     0         -   2391912    0.00    0.00    0.00    0.00    0.00     0  |__jemalloc_bg_thd
+Average:        0   2391906         -   12.87   42.57    0.00    0.00   55.45     -  redis-server
+Average:        0         -   2391906   12.87   42.57    0.00    0.00   55.45     -  |__redis-server
+Average:        0         -   2391908    0.00    0.00    0.00    0.00    0.00     -  |__bio_close_file
+Average:        0         -   2391909    0.00    0.00    0.00    0.00    0.00     -  |__bio_aof
+Average:        0         -   2391910    0.00    0.00    0.00    0.00    0.00     -  |__bio_lazy_free
+Average:        0         -   2391911    0.00    0.00    0.00    0.00    0.00     -  |__jemalloc_bg_thd
+Average:        0         -   2391912    0.00    0.00    0.00    0.00    0.00     -  |__jemalloc_bg_thd
+==== pidstat-snap 10:00:11 phase= ====
+Linux 6.6.12+ (openGauss185) 	10/23/2026 	_aarch64_	(256 CPU)
+
+10:00:11 AM   UID      TGID       TID    %usr %system  %guest   %wait    %CPU   CPU  Command
+10:00:12 AM     0   2391906         -   13.00   45.00    0.00    1.00   58.00     0  redis-server
+10:00:12 AM     0         -   2391906   13.00   45.00    0.00    1.00   58.00     0  |__redis-server
+10:00:12 AM     0         -   2391908    0.00    0.00    0.00    0.00    0.00     0  |__bio_close_file
+10:00:12 AM     0         -   2391909    0.00    0.00    0.00    0.00    0.00     0  |__bio_aof
+10:00:12 AM     0         -   2391910    0.00    0.00    0.00    0.00    0.00     0  |__bio_lazy_free
+10:00:12 AM     0         -   2391911    0.00    0.00    0.00    0.00    0.00     1  |__jemalloc_bg_thd
+10:00:12 AM     0         -   2391912    0.00    0.00    0.00    0.00    0.00     0  |__jemalloc_bg_thd
+Average:        0   2391906         -   13.00   45.00    0.00    1.00   58.00     -  redis-server
+Average:        0         -   2391906   13.00   45.00    0.00    1.00   58.00     -  |__redis-server
+Average:        0         -   2391908    0.00    0.00    0.00    0.00    0.00     -  |__bio_close_file
+Average:        0         -   2391909    0.00    0.00    0.00    0.00    0.00     -  |__bio_aof
+Average:        0         -   2391910    0.00    0.00    0.00    0.00    0.00     -  |__bio_lazy_free
+Average:        0         -   2391911    0.00    0.00    0.00    0.00    0.00     -  |__jemalloc_bg_thd
+Average:        0         -   2391912    0.00    0.00    0.00    0.00    0.00     -  |__jemalloc_bg_thd
+==== pidstat-snap 10:00:14 phase= ====
+Linux 6.6.12+ (openGauss185) 	10/23/2026 	_aarch64_	(256 CPU)
+
+10:00:14 AM   UID      TGID       TID    %usr %system  %guest   %wait    %CPU   CPU  Command
+10:00:15 AM     0   2391906         -   15.00   47.00    0.00    0.00   62.00     1  redis-server
+10:00:15 AM     0         -   2391906   15.00   48.00    0.00    0.00   63.00     1  |__redis-server
+10:00:15 AM     0         -   2391908    0.00    0.00    0.00    0.00    0.00     0  |__bio_close_file
+10:00:15 AM     0         -   2391909    0.00    0.00    0.00    0.00    0.00     0  |__bio_aof
+10:00:15 AM     0         -   2391910    0.00    0.00    0.00    0.00    0.00     0  |__bio_lazy_free
+10:00:15 AM     0         -   2391911    0.00    0.00    0.00    0.00    0.00     0  |__jemalloc_bg_thd
+10:00:15 AM     0         -   2391912    0.00    0.00    0.00    0.00    0.00     0  |__jemalloc_bg_thd
+Average:        0   2391906         -   15.00   47.00    0.00    0.00   62.00     -  redis-server
+Average:        0         -   2391906   15.00   48.00    0.00    0.00   63.00     -  |__redis-server
+Average:        0         -   2391908    0.00    0.00    0.00    0.00    0.00     -  |__bio_close_file
+Average:        0         -   2391909    0.00    0.00    0.00    0.00    0.00     -  |__bio_aof
+Average:        0         -   2391910    0.00    0.00    0.00    0.00    0.00     -  |__bio_lazy_free
+Average:        0         -   2391911    0.00    0.00    0.00    0.00    0.00     -  |__jemalloc_bg_thd
+Average:        0         -   2391912    0.00    0.00    0.00    0.00    0.00     -  |__jemalloc_bg_thd
+==== pidstat-snap 10:00:17 phase= ====
+Linux 6.6.12+ (openGauss185) 	10/23/2026 	_aarch64_	(256 CPU)
+
+10:00:17 AM   UID      TGID       TID    %usr %system  %guest   %wait    %CPU   CPU  Command
+10:00:18 AM     0   2391906         -   15.00   43.00    0.00    1.00   58.00     1  redis-server
+10:00:18 AM     0         -   2391906   15.00   43.00    0.00    1.00   58.00     1  |__redis-server
+10:00:18 AM     0         -   2391908    0.00    0.00    0.00    0.00    0.00     0  |__bio_close_file
+10:00:18 AM     0         -   2391909    0.00    0.00    0.00    0.00    0.00     0  |__bio_aof
+10:00:18 AM     0         -   2391910    0.00    0.00    0.00    0.00    0.00     0  |__bio_lazy_free
+10:00:18 AM     0         -   2391911    0.00    0.00    0.00    0.00    0.00     1  |__jemalloc_bg_thd
+10:00:18 AM     0         -   2391912    0.00    0.00    0.00    0.00    0.00     0  |__jemalloc_bg_thd
+Average:        0   2391906         -   15.00   43.00    0.00    1.00   58.00     -  redis-server
+Average:        0         -   2391906   15.00   43.00    0.00    1.00   58.00     -  |__redis-server
+Average:        0         -   2391908    0.00    0.00    0.00    0.00    0.00     -  |__bio_close_file
+Average:        0         -   2391909    0.00    0.00    0.00    0.00    0.00     -  |__bio_aof
+Average:        0         -   2391910    0.00    0.00    0.00    0.00    0.00     -  |__bio_lazy_free
+Average:        0         -   2391911    0.00    0.00    0.00    0.00    0.00     -  |__jemalloc_bg_thd
+Average:        0         -   2391912    0.00    0.00    0.00    0.00    0.00     -  |__jemalloc_bg_thd
+==== pidstat-snap 10:00:20 phase= ====
+Linux 6.6.12+ (openGauss185) 	10/23/2026 	_aarch64_	(256 CPU)
+
+10:00:20 AM   UID      TGID       TID    %usr %system  %guest   %wait    %CPU   CPU  Command
+10:00:21 AM     0   2391906         -   12.00   45.00    0.00    0.00   57.00     0  redis-server
+10:00:21 AM     0         -   2391906   12.00   46.00    0.00    0.00   58.00     0  |__redis-server
+10:00:21 AM     0         -   2391908    0.00    0.00    0.00    0.00    0.00     0  |__bio_close_file
+10:00:21 AM     0         -   2391909    0.00    0.00    0.00    0.00    0.00     0  |__bio_aof
+10:00:21 AM     0         -   2391910    0.00    0.00    0.00    0.00    0.00     0  |__bio_lazy_free
+10:00:21 AM     0         -   2391911    0.00    0.00    0.00    0.00    0.00     1  |__jemalloc_bg_thd
+10:00:21 AM     0         -   2391912    0.00    0.00    0.00    0.00    0.00     0  |__jemalloc_bg_thd
+Average:        0   2391906         -   12.00   45.00    0.00    0.00   57.00     -  redis-server
+Average:        0         -   2391906   12.00   46.00    0.00    0.00   58.00     -  |__redis-server
+Average:        0         -   2391908    0.00    0.00    0.00    0.00    0.00     -  |__bio_close_file
+Average:        0         -   2391909    0.00    0.00    0.00    0.00    0.00     -  |__bio_aof
+Average:        0         -   2391910    0.00    0.00    0.00    0.00    0.00     -  |__bio_lazy_free
+Average:        0         -   2391911    0.00    0.00    0.00    0.00    0.00     -  |__jemalloc_bg_thd
+Average:        0         -   2391912    0.00    0.00    0.00    0.00    0.00     -  |__jemalloc_bg_thd
+==== pidstat-snap 10:00:23 phase= ====
+Linux 6.6.12+ (openGauss185) 	10/23/2026 	_aarch64_	(256 CPU)
+
+10:00:23 AM   UID      TGID       TID    %usr %system  %guest   %wait    %CPU   CPU  Command
+10:00:24 AM     0   2391906         -   13.00   45.00    0.00    0.00   58.00     1  redis-server
+10:00:24 AM     0         -   2391906   12.00   45.00    0.00    0.00   57.00     1  |__redis-server
+10:00:24 AM     0         -   2391908    0.00    0.00    0.00    0.00    0.00     0  |__bio_close_file
+10:00:24 AM     0         -   2391909    0.00    0.00    0.00    0.00    0.00     0  |__bio_aof
+10:00:24 AM     0         -   2391910    0.00    0.00    0.00    0.00    0.00     0  |__bio_lazy_free
+10:00:24 AM     0         -   2391911    0.00    0.00    0.00    0.00    0.00     0  |__jemalloc_bg_thd
+10:00:24 AM     0         -   2391912    0.00    0.00    0.00    0.00    0.00     0  |__jemalloc_bg_thd
+Average:        0   2391906         -   13.00   45.00    0.00    0.00   58.00     -  redis-server
+Average:        0         -   2391906   12.00   45.00    0.00    0.00   57.00     -  |__redis-server
+Average:        0         -   2391908    0.00    0.00    0.00    0.00    0.00     -  |__bio_close_file
+Average:        0         -   2391909    0.00    0.00    0.00    0.00    0.00     -  |__bio_aof
+Average:        0         -   2391910    0.00    0.00    0.00    0.00    0.00     -  |__bio_lazy_free
+Average:        0         -   2391911    0.00    0.00    0.00    0.00    0.00     -  |__jemalloc_bg_thd
+Average:        0         -   2391912    0.00    0.00    0.00    0.00    0.00     -  |__jemalloc_bg_thd
+==== pidstat-snap 10:00:26 phase= ====
+Linux 6.6.12+ (openGauss185) 	10/23/2026 	_aarch64_	(256 CPU)
+
+10:00:26 AM   UID      TGID       TID    %usr %system  %guest   %wait    %CPU   CPU  Command
+10:00:27 AM     0   2391906         -   14.00   44.00    0.00    1.00   58.00     1  redis-server
+10:00:27 AM     0         -   2391906   14.00   44.00    0.00    1.00   58.00     1  |__redis-server
+10:00:27 AM     0         -   2391908    0.00    0.00    0.00    0.00    0.00     0  |__bio_close_file
+10:00:27 AM     0         -   2391909    0.00    0.00    0.00    0.00    0.00     0  |__bio_aof
+10:00:27 AM     0         -   2391910    0.00    0.00    0.00    0.00    0.00     0  |__bio_lazy_free
+10:00:27 AM     0         -   2391911    0.00    0.00    0.00    0.00    0.00     0  |__jemalloc_bg_thd
+10:00:27 AM     0         -   2391912    0.00    0.00    0.00    0.00    0.00     0  |__jemalloc_bg_thd
+Average:        0   2391906         -   14.00   44.00    0.00    1.00   58.00     -  redis-server
+Average:        0         -   2391906   14.00   44.00    0.00    1.00   58.00     -  |__redis-server
+Average:        0         -   2391908    0.00    0.00    0.00    0.00    0.00     -  |__bio_close_file
+Average:        0         -   2391909    0.00    0.00    0.00    0.00    0.00     -  |__bio_aof
+Average:        0         -   2391910    0.00    0.00    0.00    0.00    0.00     -  |__bio_lazy_free
+Average:        0         -   2391911    0.00    0.00    0.00    0.00    0.00     -  |__jemalloc_bg_thd
+Average:        0         -   2391912    0.00    0.00    0.00    0.00    0.00     -  |__jemalloc_bg_thd
+==== pidstat-snap 10:00:29 phase= ====
+Linux 6.6.12+ (openGauss185) 	10/23/2026 	_aarch64_	(256 CPU)
+
+10:00:29 AM   UID      TGID       TID    %usr %system  %guest   %wait    %CPU   CPU  Command
+10:00:30 AM     0   2391906         -   10.00   49.00    0.00    0.00   59.00     1  redis-server
+10:00:30 AM     0         -   2391906   10.00   49.00    0.00    0.00   59.00     1  |__redis-server
+10:00:30 AM     0         -   2391908    0.00    0.00    0.00    0.00    0.00     0  |__bio_close_file
+10:00:30 AM     0         -   2391909    0.00    0.00    0.00    0.00    0.00     0  |__bio_aof
+10:00:30 AM     0         -   2391910    0.00    0.00    0.00    0.00    0.00     0  |__bio_lazy_free
+10:00:30 AM     0         -   2391911    0.00    1.00    0.00    0.00    1.00     0  |__jemalloc_bg_thd
+10:00:30 AM     0         -   2391912    0.00    0.00    0.00    0.00    0.00     0  |__jemalloc_bg_thd
+Average:        0   2391906         -   10.00   49.00    0.00    0.00   59.00     -  redis-server
+Average:        0         -   2391906   10.00   49.00    0.00    0.00   59.00     -  |__redis-server
+Average:        0         -   2391908    0.00    0.00    0.00    0.00    0.00     -  |__bio_close_file
+Average:        0         -   2391909    0.00    0.00    0.00    0.00    0.00     -  |__bio_aof
+Average:        0         -   2391910    0.00    0.00    0.00    0.00    0.00     -  |__bio_lazy_free
+Average:        0         -   2391911    0.00    1.00    0.00    0.00    1.00     -  |__jemalloc_bg_thd
+Average:        0         -   2391912    0.00    0.00    0.00    0.00    0.00     -  |__jemalloc_bg_thd
+==== pidstat-snap 10:00:32 phase=2 ====
+Linux 6.6.12+ (openGauss185) 	10/23/2026 	_aarch64_	(256 CPU)
+
+10:00:32 AM   UID      TGID       TID    %usr %system  %guest   %wait    %CPU   CPU  Command
+10:00:33 AM     0   2391906         -   26.00   72.00    0.00    1.00   98.00     1  redis-server
+10:00:33 AM     0         -   2391906   26.00   70.00    0.00    1.00   96.00     1  |__redis-server
+10:00:33 AM     0         -   2391908    0.00    0.00    0.00    0.00    0.00     0  |__bio_close_file
+10:00:33 AM     0         -   2391909    0.00    0.00    0.00    0.00    0.00     0  |__bio_aof
+10:00:33 AM     0         -   2391910    0.00    0.00    0.00    0.00    0.00     0  |__bio_lazy_free
+10:00:33 AM     0         -   2391911    0.00    1.00    0.00    0.00    1.00     1  |__jemalloc_bg_thd
+10:00:33 AM     0         -   2391912    0.00    0.00    0.00    0.00    0.00     0  |__jemalloc_bg_thd
+Average:        0   2391906         -   26.00   72.00    0.00    1.00   98.00     -  redis-server
+Average:        0         -   2391906   26.00   70.00    0.00    1.00   96.00     -  |__redis-server
+Average:        0         -   2391908    0.00    0.00    0.00    0.00    0.00     -  |__bio_close_file
+Average:        0         -   2391909    0.00    0.00    0.00    0.00    0.00     -  |__bio_aof
+Average:        0         -   2391910    0.00    0.00    0.00    0.00    0.00     -  |__bio_lazy_free
+Average:        0         -   2391911    0.00    1.00    0.00    0.00    1.00     -  |__jemalloc_bg_thd
+Average:        0         -   2391912    0.00    0.00    0.00    0.00    0.00     -  |__jemalloc_bg_thd
+==== pidstat-snap 10:00:35 phase=2 ====
+Linux 6.6.12+ (openGauss185) 	10/23/2026 	_aarch64_	(256 CPU)
+
+10:00:35 AM   UID      TGID       TID    %usr %system  %guest   %wait    %CPU   CPU  Command
+10:00:36 AM     0   2391906         -   23.00   74.00    0.00    1.00   97.00     0  redis-server
+10:00:36 AM     0         -   2391906   22.00   73.00    0.00    1.00   95.00     0  |__redis-server
+10:00:36 AM     0         -   2391908    0.00    0.00    0.00    0.00    0.00     0  |__bio_close_file
+10:00:36 AM     0         -   2391909    0.00    0.00    0.00    0.00    0.00     0  |__bio_aof
+10:00:36 AM     0         -   2391910    0.00    0.00    0.00    0.00    0.00     0  |__bio_lazy_free
+10:00:36 AM     0         -   2391911    0.00    0.00    0.00    0.00    0.00     1  |__jemalloc_bg_thd
+10:00:36 AM     0         -   2391912    0.00    0.00    0.00    0.00    0.00     0  |__jemalloc_bg_thd
+Average:        0   2391906         -   23.00   74.00    0.00    1.00   97.00     -  redis-server
+Average:        0         -   2391906   22.00   73.00    0.00    1.00   95.00     -  |__redis-server
+Average:        0         -   2391908    0.00    0.00    0.00    0.00    0.00     -  |__bio_close_file
+Average:        0         -   2391909    0.00    0.00    0.00    0.00    0.00     -  |__bio_aof
+Average:        0         -   2391910    0.00    0.00    0.00    0.00    0.00     -  |__bio_lazy_free
+Average:        0         -   2391911    0.00    0.00    0.00    0.00    0.00     -  |__jemalloc_bg_thd
+Average:        0         -   2391912    0.00    0.00    0.00    0.00    0.00     -  |__jemalloc_bg_thd
+==== pidstat-snap 10:00:38 phase=2 ====
+Linux 6.6.12+ (openGauss185) 	10/23/2026 	_aarch64_	(256 CPU)
+
+10:00:38 AM   UID      TGID       TID    %usr %system  %guest   %wait    %CPU   CPU  Command
+10:00:39 AM     0   2391906         -   23.76   71.29    0.00    0.99   95.05     0  redis-server
+10:00:39 AM     0         -   2391906   22.77   71.29    0.00    0.99   94.06     0  |__redis-server
+10:00:39 AM     0         -   2391908    0.00    0.00    0.00    0.00    0.00     0  |__bio_close_file
+10:00:39 AM     0         -   2391909    0.00    0.00    0.00    0.00    0.00     0  |__bio_aof
+10:00:39 AM     0         -   2391910    0.00    0.00    0.00    0.00    0.00     0  |__bio_lazy_free
+10:00:39 AM     0         -   2391911    0.00    0.00    0.00    0.00    0.00     0  |__jemalloc_bg_thd
+10:00:39 AM     0         -   2391912    0.00    0.00    0.00    0.00    0.00     0  |__jemalloc_bg_thd
+Average:        0   2391906         -   23.76   71.29    0.00    0.99   95.05     -  redis-server
+Average:        0         -   2391906   22.77   71.29    0.00    0.99   94.06     -  |__redis-server
+Average:        0         -   2391908    0.00    0.00    0.00    0.00    0.00     -  |__bio_close_file
+Average:        0         -   2391909    0.00    0.00    0.00    0.00    0.00     -  |__bio_aof
+Average:        0         -   2391910    0.00    0.00    0.00    0.00    0.00     -  |__bio_lazy_free
+Average:        0         -   2391911    0.00    0.00    0.00    0.00    0.00     -  |__jemalloc_bg_thd
+Average:        0         -   2391912    0.00    0.00    0.00    0.00    0.00     -  |__jemalloc_bg_thd
+==== pidstat-snap 10:00:41 phase=2 ====
+Linux 6.6.12+ (openGauss185) 	10/23/2026 	_aarch64_	(256 CPU)
+
+10:00:41 AM   UID      TGID       TID    %usr %system  %guest   %wait    %CPU   CPU  Command
+10:00:42 AM     0   2391906         -   26.00   71.00    0.00    1.00   97.00     1  redis-server
+10:00:42 AM     0         -   2391906   26.00   70.00    0.00    1.00   96.00     1  |__redis-server
+10:00:42 AM     0         -   2391908    0.00    0.00    0.00    0.00    0.00     0  |__bio_close_file
+10:00:42 AM     0         -   2391909    0.00    0.00    0.00    0.00    0.00     0  |__bio_aof
+10:00:42 AM     0         -   2391910    0.00    0.00    0.00    0.00    0.00     0  |__bio_lazy_free
+10:00:42 AM     0         -   2391911    0.00    1.00    0.00    0.00    1.00     0  |__jemalloc_bg_thd
+10:00:42 AM     0         -   2391912    0.00    0.00    0.00    0.00    0.00     0  |__jemalloc_bg_thd
+Average:        0   2391906         -   26.00   71.00    0.00    1.00   97.00     -  redis-server
+Average:        0         -   2391906   26.00   70.00    0.00    1.00   96.00     -  |__redis-server
+Average:        0         -   2391908    0.00    0.00    0.00    0.00    0.00     -  |__bio_close_file
+Average:        0         -   2391909    0.00    0.00    0.00    0.00    0.00     -  |__bio_aof
+Average:        0         -   2391910    0.00    0.00    0.00    0.00    0.00     -  |__bio_lazy_free
+Average:        0         -   2391911    0.00    1.00    0.00    0.00    1.00     -  |__jemalloc_bg_thd
+Average:        0         -   2391912    0.00    0.00    0.00    0.00    0.00     -  |__jemalloc_bg_thd
+==== pidstat-snap 10:00:44 phase=2 ====
+Linux 6.6.12+ (openGauss185) 	10/23/2026 	_aarch64_	(256 CPU)
+
+10:00:44 AM   UID      TGID       TID    %usr %system  %guest   %wait    %CPU   CPU  Command
+10:00:45 AM     0   2391906         -   23.00   73.00    0.00    1.00   96.00     1  redis-server
+10:00:45 AM     0         -   2391906   23.00   73.00    0.00    1.00   96.00     1  |__redis-server
+10:00:45 AM     0         -   2391908    0.00    0.00    0.00    0.00    0.00     0  |__bio_close_file
+10:00:45 AM     0         -   2391909    0.00    0.00    0.00    0.00    0.00     0  |__bio_aof
+10:00:45 AM     0         -   2391910    0.00    0.00    0.00    0.00    0.00     0  |__bio_lazy_free
+10:00:45 AM     0         -   2391911    0.00    0.00    0.00    1.00    0.00     1  |__jemalloc_bg_thd
+10:00:45 AM     0         -   2391912    0.00    0.00    0.00    0.00    0.00     0  |__jemalloc_bg_thd
+Average:        0   2391906         -   23.00   73.00    0.00    1.00   96.00     -  redis-server
+Average:        0         -   2391906   23.00   73.00    0.00    1.00   96.00     -  |__redis-server
+Average:        0         -   2391908    0.00    0.00    0.00    0.00    0.00     -  |__bio_close_file
+Average:        0         -   2391909    0.00    0.00    0.00    0.00    0.00     -  |__bio_aof
+Average:        0         -   2391910    0.00    0.00    0.00    0.00    0.00     -  |__bio_lazy_free
+Average:        0         -   2391911    0.00    0.00    0.00    1.00    0.00     -  |__jemalloc_bg_thd
+Average:        0         -   2391912    0.00    0.00    0.00    0.00    0.00     -  |__jemalloc_bg_thd
+==== pidstat-snap 10:00:47 phase=2 ====
+Linux 6.6.12+ (openGauss185) 	10/23/2026 	_aarch64_	(256 CPU)
+
+10:00:47 AM   UID      TGID       TID    %usr %system  %guest   %wait    %CPU   CPU  Command
+10:00:48 AM     0   2391906         -   25.00   70.00    0.00    0.00   95.00     1  redis-server
+10:00:48 AM     0         -   2391906   25.00   70.00    0.00    0.00   95.00     1  |__redis-server
+10:00:48 AM     0         -   2391908    0.00    0.00    0.00    0.00    0.00     0  |__bio_close_file
+10:00:48 AM     0         -   2391909    0.00    0.00    0.00    0.00    0.00     0  |__bio_aof
+10:00:48 AM     0         -   2391910    0.00    0.00    0.00    0.00    0.00     0  |__bio_lazy_free
+10:00:48 AM     0         -   2391911    0.00    0.00    0.00    0.00    0.00     0  |__jemalloc_bg_thd
+10:00:48 AM     0         -   2391912    0.00    0.00    0.00    0.00    0.00     0  |__jemalloc_bg_thd
+Average:        0   2391906         -   25.00   70.00    0.00    0.00   95.00     -  redis-server
+Average:        0         -   2391906   25.00   70.00    0.00    0.00   95.00     -  |__redis-server
+Average:        0         -   2391908    0.00    0.00    0.00    0.00    0.00     -  |__bio_close_file
+Average:        0         -   2391909    0.00    0.00    0.00    0.00    0.00     -  |__bio_aof
+Average:        0         -   2391910    0.00    0.00    0.00    0.00    0.00     -  |__bio_lazy_free
+Average:        0         -   2391911    0.00    0.00    0.00    0.00    0.00     -  |__jemalloc_bg_thd
+Average:        0         -   2391912    0.00    0.00    0.00    0.00    0.00     -  |__jemalloc_bg_thd
+==== pidstat-snap 10:00:50 phase=2 ====
+Linux 6.6.12+ (openGauss185) 	10/23/2026 	_aarch64_	(256 CPU)
+
+10:00:50 AM   UID      TGID       TID    %usr %system  %guest   %wait    %CPU   CPU  Command
+10:00:51 AM     0   2391906         -   18.00   78.00    0.00    0.00   96.00     0  redis-server
+10:00:51 AM     0         -   2391906   17.00   78.00    0.00    0.00   95.00     0  |__redis-server
+10:00:51 AM     0         -   2391908    0.00    0.00    0.00    0.00    0.00     0  |__bio_close_file
+10:00:51 AM     0         -   2391909    0.00    0.00    0.00    0.00    0.00     0  |__bio_aof
+10:00:51 AM     0         -   2391910    0.00    0.00    0.00    0.00    0.00     0  |__bio_lazy_free
+10:00:51 AM     0         -   2391911    0.00    0.00    0.00    1.00    0.00     0  |__jemalloc_bg_thd
+10:00:51 AM     0         -   2391912    0.00    0.00    0.00    0.00    0.00     0  |__jemalloc_bg_thd
+Average:        0   2391906         -   18.00   78.00    0.00    0.00   96.00     -  redis-server
+Average:        0         -   2391906   17.00   78.00    0.00    0.00   95.00     -  |__redis-server
+Average:        0         -   2391908    0.00    0.00    0.00    0.00    0.00     -  |__bio_close_file
+Average:        0         -   2391909    0.00    0.00    0.00    0.00    0.00     -  |__bio_aof
+Average:        0         -   2391910    0.00    0.00    0.00    0.00    0.00     -  |__bio_lazy_free
+Average:        0         -   2391911    0.00    0.00    0.00    1.00    0.00     -  |__jemalloc_bg_thd
+Average:        0         -   2391912    0.00    0.00    0.00    0.00    0.00     -  |__jemalloc_bg_thd
+==== pidstat-snap 10:00:53 phase=2 ====
+Linux 6.6.12+ (openGauss185) 	10/23/2026 	_aarch64_	(256 CPU)
+
+10:00:53 AM   UID      TGID       TID    %usr %system  %guest   %wait    %CPU   CPU  Command
+10:00:54 AM     0   2391906         -   20.00   76.00    0.00    1.00   96.00     1  redis-server
+10:00:54 AM     0         -   2391906   19.00   75.00    0.00    1.00   94.00     1  |__redis-server
+10:00:54 AM     0         -   2391908    0.00    0.00    0.00    0.00    0.00     0  |__bio_close_file
+10:00:54 AM     0         -   2391909    0.00    0.00    0.00    0.00    0.00     0  |__bio_aof
+10:00:54 AM     0         -   2391910    0.00    0.00    0.00    0.00    0.00     0  |__bio_lazy_free
+10:00:54 AM     0         -   2391911    0.00    0.00    0.00    0.00    0.00     1  |__jemalloc_bg_thd
+10:00:54 AM     0         -   2391912    0.00    0.00    0.00    0.00    0.00     0  |__jemalloc_bg_thd
+Average:        0   2391906         -   20.00   76.00    0.00    1.00   96.00     -  redis-server
+Average:        0         -   2391906   19.00   75.00    0.00    1.00   94.00     -  |__redis-server
+Average:        0         -   2391908    0.00    0.00    0.00    0.00    0.00     -  |__bio_close_file
+Average:        0         -   2391909    0.00    0.00    0.00    0.00    0.00     -  |__bio_aof
+Average:        0         -   2391910    0.00    0.00    0.00    0.00    0.00     -  |__bio_lazy_free
+Average:        0         -   2391911    0.00    0.00    0.00    0.00    0.00     -  |__jemalloc_bg_thd
+Average:        0         -   2391912    0.00    0.00    0.00    0.00    0.00     -  |__jemalloc_bg_thd
+==== pidstat-snap 10:00:56 phase=2 ====
+Linux 6.6.12+ (openGauss185) 	10/23/2026 	_aarch64_	(256 CPU)
+
+10:00:56 AM   UID      TGID       TID    %usr %system  %guest   %wait    %CPU   CPU  Command
+10:00:57 AM     0   2391906         -   23.76   70.30    0.00    0.00   94.06     0  redis-server
+10:00:57 AM     0         -   2391906   24.75   70.30    0.00    0.00   95.05     0  |__redis-server
+10:00:57 AM     0         -   2391908    0.00    0.00    0.00    0.00    0.00     0  |__bio_close_file
+10:00:57 AM     0         -   2391909    0.00    0.00    0.00    0.00    0.00     0  |__bio_aof
+10:00:57 AM     0         -   2391910    0.00    0.00    0.00    0.00    0.00     0  |__bio_lazy_free
+10:00:57 AM     0         -   2391911    0.00    0.00    0.00    0.00    0.00     1  |__jemalloc_bg_thd
+10:00:57 AM     0         -   2391912    0.00    0.00    0.00    0.00    0.00     0  |__jemalloc_bg_thd
+Average:        0   2391906         -   23.76   70.30    0.00    0.00   94.06     -  redis-server
+Average:        0         -   2391906   24.75   70.30    0.00    0.00   95.05     -  |__redis-server
+Average:        0         -   2391908    0.00    0.00    0.00    0.00    0.00     -  |__bio_close_file
+Average:        0         -   2391909    0.00    0.00    0.00    0.00    0.00     -  |__bio_aof
+Average:        0         -   2391910    0.00    0.00    0.00    0.00    0.00     -  |__bio_lazy_free
+Average:        0         -   2391911    0.00    0.00    0.00    0.00    0.00     -  |__jemalloc_bg_thd
+Average:        0         -   2391912    0.00    0.00    0.00    0.00    0.00     -  |__jemalloc_bg_thd
+==== pidstat-snap 10:00:59 phase=2 ====
+Linux 6.6.12+ (openGauss185) 	10/23/2026 	_aarch64_	(256 CPU)
+
+10:00:59 AM   UID      TGID       TID    %usr %system  %guest   %wait    %CPU   CPU  Command
+10:01:00 AM     0   2391906         -   24.00   72.00    0.00    0.00   96.00     1  redis-server
+10:01:00 AM     0         -   2391906   23.00   73.00    0.00    0.00   96.00     1  |__redis-server
+10:01:00 AM     0         -   2391908    0.00    0.00    0.00    0.00    0.00     0  |__bio_close_file
+10:01:00 AM     0         -   2391909    0.00    0.00    0.00    0.00    0.00     0  |__bio_aof
+10:01:00 AM     0         -   2391910    0.00    0.00    0.00    0.00    0.00     0  |__bio_lazy_free
+10:01:00 AM     0         -   2391911    0.00    0.00    0.00    0.00    0.00     0  |__jemalloc_bg_thd
+10:01:00 AM     0         -   2391912    0.00    0.00    0.00    0.00    0.00     0  |__jemalloc_bg_thd
+Average:        0   2391906         -   24.00   72.00    0.00    0.00   96.00     -  redis-server
+Average:        0         -   2391906   23.00   73.00    0.00    0.00   96.00     -  |__redis-server
+Average:        0         -   2391908    0.00    0.00    0.00    0.00    0.00     -  |__bio_close_file
+Average:        0         -   2391909    0.00    0.00    0.00    0.00    0.00     -  |__bio_aof
+Average:        0         -   2391910    0.00    0.00    0.00    0.00    0.00     -  |__bio_lazy_free
+Average:        0         -   2391911    0.00    0.00    0.00    0.00    0.00     -  |__jemalloc_bg_thd
+Average:        0         -   2391912    0.00    0.00    0.00    0.00    0.00     -  |__jemalloc_bg_thd
+==== pidstat-snap 10:01:02 phase=3 ====
+Linux 6.6.12+ (openGauss185) 	10/23/2026 	_aarch64_	(256 CPU)
+
+10:01:02 AM   UID      TGID       TID    %usr %system  %guest   %wait    %CPU   CPU  Command
+10:01:03 AM     0   2391906         -   22.00   75.00    0.00    1.00   97.00     1  redis-server
+10:01:03 AM     0         -   2391906   21.00   75.00    0.00    1.00   96.00     1  |__redis-server
+10:01:03 AM     0         -   2391908    0.00    0.00    0.00    0.00    0.00     0  |__bio_close_file
+10:01:03 AM     0         -   2391909    0.00    0.00    0.00    0.00    0.00     0  |__bio_aof
+10:01:03 AM     0         -   2391910    0.00    0.00    0.00    0.00    0.00     0  |__bio_lazy_free
+10:01:03 AM     0         -   2391911    0.00    0.00    0.00    0.00    0.00     1  |__jemalloc_bg_thd
+10:01:03 AM     0         -   2391912    0.00    0.00    0.00    0.00    0.00     0  |__jemalloc_bg_thd
+Average:        0   2391906         -   22.00   75.00    0.00    1.00   97.00     -  redis-server
+Average:        0         -   2391906   21.00   75.00    0.00    1.00   96.00     -  |__redis-server
+Average:        0         -   2391908    0.00    0.00    0.00    0.00    0.00     -  |__bio_close_file
+Average:        0         -   2391909    0.00    0.00    0.00    0.00    0.00     -  |__bio_aof
+Average:        0         -   2391910    0.00    0.00    0.00    0.00    0.00     -  |__bio_lazy_free
+Average:        0         -   2391911    0.00    0.00    0.00    0.00    0.00     -  |__jemalloc_bg_thd
+Average:        0         -   2391912    0.00    0.00    0.00    0.00    0.00     -  |__jemalloc_bg_thd
+==== pidstat-snap 10:01:05 phase=3 ====
+Linux 6.6.12+ (openGauss185) 	10/23/2026 	_aarch64_	(256 CPU)
+
+10:01:05 AM   UID      TGID       TID    %usr %system  %guest   %wait    %CPU   CPU  Command
+10:01:06 AM     0   2391906         -   20.00   76.00    0.00    1.00   96.00     1  redis-server
+10:01:06 AM     0         -   2391906   20.00   76.00    0.00    1.00   96.00     1  |__redis-server
+10:01:06 AM     0         -   2391908    0.00    0.00    0.00    0.00    0.00     0  |__bio_close_file
+10:01:06 AM     0         -   2391909    0.00    0.00    0.00    0.00    0.00     0  |__bio_aof
+10:01:06 AM     0         -   2391910    0.00    0.00    0.00    0.00    0.00     0  |__bio_lazy_free
+10:01:06 AM     0         -   2391911    0.00    0.00    0.00    0.00    0.00     0  |__jemalloc_bg_thd
+10:01:06 AM     0         -   2391912    0.00    0.00    0.00    0.00    0.00     0  |__jemalloc_bg_thd
+Average:        0   2391906         -   20.00   76.00    0.00    1.00   96.00     -  redis-server
+Average:        0         -   2391906   20.00   76.00    0.00    1.00   96.00     -  |__redis-server
+Average:        0         -   2391908    0.00    0.00    0.00    0.00    0.00     -  |__bio_close_file
+Average:        0         -   2391909    0.00    0.00    0.00    0.00    0.00     -  |__bio_aof
+Average:        0         -   2391910    0.00    0.00    0.00    0.00    0.00     -  |__bio_lazy_free
+Average:        0         -   2391911    0.00    0.00    0.00    0.00    0.00     -  |__jemalloc_bg_thd
+Average:        0         -   2391912    0.00    0.00    0.00    0.00    0.00     -  |__jemalloc_bg_thd
+==== pidstat-snap 10:01:08 phase=3 ====
+Linux 6.6.12+ (openGauss185) 	10/23/2026 	_aarch64_	(256 CPU)
+
+10:01:08 AM   UID      TGID       TID    %usr %system  %guest   %wait    %CPU   CPU  Command
+10:01:09 AM     0   2391906         -   17.82   78.22    0.00    0.99   96.04     1  redis-server
+10:01:09 AM     0         -   2391906   18.81   77.23    0.00    0.99   96.04     1  |__redis-server
+10:01:09 AM     0         -   2391908    0.00    0.00    0.00    0.00    0.00     0  |__bio_close_file
+10:01:09 AM     0         -   2391909    0.00    0.00    0.00    0.00    0.00     0  |__bio_aof
+10:01:09 AM     0         -   2391910    0.00    0.00    0.00    0.00    0.00     0  |__bio_lazy_free
+10:01:09 AM     0         -   2391911    0.00    0.99    0.00    0.00    0.99     0  |__jemalloc_bg_thd
+10:01:09 AM     0         -   2391912    0.00    0.00    0.00    0.00    0.00     0  |__jemalloc_bg_thd
+Average:        0   2391906         -   17.82   78.22    0.00    0.99   96.04     -  redis-server
+Average:        0         -   2391906   18.81   77.23    0.00    0.99   96.04     -  |__redis-server
+Average:        0         -   2391908    0.00    0.00    0.00    0.00    0.00     -  |__bio_close_file
+Average:        0         -   2391909    0.00    0.00    0.00    0.00    0.00     -  |__bio_aof
+Average:        0         -   2391910    0.00    0.00    0.00    0.00    0.00     -  |__bio_lazy_free
+Average:        0         -   2391911    0.00    0.99    0.00    0.00    0.99     -  |__jemalloc_bg_thd
+Average:        0         -   2391912    0.00    0.00    0.00    0.00    0.00     -  |__jemalloc_bg_thd
+==== pidstat-snap 10:01:11 phase=3 ====
+Linux 6.6.12+ (openGauss185) 	10/23/2026 	_aarch64_	(256 CPU)
+
+10:01:11 AM   UID      TGID       TID    %usr %system  %guest   %wait    %CPU   CPU  Command
+10:01:12 AM     0   2391906         -   20.00   77.00    0.00    1.00   97.00     0  redis-server
+10:01:12 AM     0         -   2391906   20.00   77.00    0.00    1.00   97.00     0  |__redis-server
+10:01:12 AM     0         -   2391908    0.00    0.00    0.00    0.00    0.00     0  |__bio_close_file
+10:01:12 AM     0         -   2391909    0.00    0.00    0.00    0.00    0.00     0  |__bio_aof
+10:01:12 AM     0         -   2391910    0.00    0.00    0.00    0.00    0.00     0  |__bio_lazy_free
+10:01:12 AM     0         -   2391911    0.00    0.00    0.00    1.00    0.00     1  |__jemalloc_bg_thd
+10:01:12 AM     0         -   2391912    0.00    0.00    0.00    0.00    0.00     0  |__jemalloc_bg_thd
+Average:        0   2391906         -   20.00   77.00    0.00    1.00   97.00     -  redis-server
+Average:        0         -   2391906   20.00   77.00    0.00    1.00   97.00     -  |__redis-server
+Average:        0         -   2391908    0.00    0.00    0.00    0.00    0.00     -  |__bio_close_file
+Average:        0         -   2391909    0.00    0.00    0.00    0.00    0.00     -  |__bio_aof
+Average:        0         -   2391910    0.00    0.00    0.00    0.00    0.00     -  |__bio_lazy_free
+Average:        0         -   2391911    0.00    0.00    0.00    1.00    0.00     -  |__jemalloc_bg_thd
+Average:        0         -   2391912    0.00    0.00    0.00    0.00    0.00     -  |__jemalloc_bg_thd
+==== pidstat-snap 10:01:14 phase=3 ====
+Linux 6.6.12+ (openGauss185) 	10/23/2026 	_aarch64_	(256 CPU)
+
+10:01:14 AM   UID      TGID       TID    %usr %system  %guest   %wait    %CPU   CPU  Command
+10:01:15 AM     0   2391906         -   21.00   76.00    0.00    1.00   97.00     1  redis-server
+10:01:15 AM     0         -   2391906   21.00   76.00    0.00    1.00   97.00     1  |__redis-server
+10:01:15 AM     0         -   2391908    0.00    0.00    0.00    0.00    0.00     0  |__bio_close_file
+10:01:15 AM     0         -   2391909    0.00    0.00    0.00    0.00    0.00     0  |__bio_aof
+10:01:15 AM     0         -   2391910    0.00    0.00    0.00    0.00    0.00     0  |__bio_lazy_free
+10:01:15 AM     0         -   2391911    0.00    0.00    0.00    0.00    0.00     0  |__jemalloc_bg_thd
+10:01:15 AM     0         -   2391912    0.00    0.00    0.00    0.00    0.00     0  |__jemalloc_bg_thd
+Average:        0   2391906         -   21.00   76.00    0.00    1.00   97.00     -  redis-server
+Average:        0         -   2391906   21.00   76.00    0.00    1.00   97.00     -  |__redis-server
+Average:        0         -   2391908    0.00    0.00    0.00    0.00    0.00     -  |__bio_close_file
+Average:        0         -   2391909    0.00    0.00    0.00    0.00    0.00     -  |__bio_aof
+Average:        0         -   2391910    0.00    0.00    0.00    0.00    0.00     -  |__bio_lazy_free
+Average:        0         -   2391911    0.00    0.00    0.00    0.00    0.00     -  |__jemalloc_bg_thd
+Average:        0         -   2391912    0.00    0.00    0.00    0.00    0.00     -  |__jemalloc_bg_thd
+==== pidstat-snap 10:01:17 phase=3 ====
+Linux 6.6.12+ (openGauss185) 	10/23/2026 	_aarch64_	(256 CPU)
+
+10:01:17 AM   UID      TGID       TID    %usr %system  %guest   %wait    %CPU   CPU  Command
+10:01:18 AM     0   2391906         -   24.00   73.00    0.00    1.00   97.00     1  redis-server
+10:01:18 AM     0         -   2391906   23.00   73.00    0.00    1.00   96.00     1  |__redis-server
+10:01:18 AM     0         -   2391908    0.00    0.00    0.00    0.00    0.00     0  |__bio_close_file
+10:01:18 AM     0         -   2391909    0.00    0.00    0.00    0.00    0.00     0  |__bio_aof
+10:01:18 AM     0         -   2391910    0.00    0.00    0.00    0.00    0.00     0  |__bio_lazy_free
+10:01:18 AM     0         -   2391911    0.00    0.00    0.00    0.00    0.00     0  |__jemalloc_bg_thd
+10:01:18 AM     0         -   2391912    0.00    0.00    0.00    0.00    0.00     0  |__jemalloc_bg_thd
+Average:        0   2391906         -   24.00   73.00    0.00    1.00   97.00     -  redis-server
+Average:        0         -   2391906   23.00   73.00    0.00    1.00   96.00     -  |__redis-server
+Average:        0         -   2391908    0.00    0.00    0.00    0.00    0.00     -  |__bio_close_file
+Average:        0         -   2391909    0.00    0.00    0.00    0.00    0.00     -  |__bio_aof
+Average:        0         -   2391910    0.00    0.00    0.00    0.00    0.00     -  |__bio_lazy_free
+Average:        0         -   2391911    0.00    0.00    0.00    0.00    0.00     -  |__jemalloc_bg_thd
+Average:        0         -   2391912    0.00    0.00    0.00    0.00    0.00     -  |__jemalloc_bg_thd
+==== pidstat-snap 10:01:20 phase=3 ====
+Linux 6.6.12+ (openGauss185) 	10/23/2026 	_aarch64_	(256 CPU)
+
+10:01:20 AM   UID      TGID       TID    %usr %system  %guest   %wait    %CPU   CPU  Command
+10:01:21 AM     0   2391906         -   17.00   79.00    0.00    1.00   96.00     1  redis-server
+10:01:21 AM     0         -   2391906   17.00   79.00    0.00    1.00   96.00     1  |__redis-server
+10:01:21 AM     0         -   2391908    0.00    0.00    0.00    0.00    0.00     0  |__bio_close_file
+10:01:21 AM     0         -   2391909    0.00    0.00    0.00    0.00    0.00     0  |__bio_aof
+10:01:21 AM     0         -   2391910    0.00    0.00    0.00    0.00    0.00     0  |__bio_lazy_free
+10:01:21 AM     0         -   2391911    0.00    0.00    0.00    0.00    0.00     0  |__jemalloc_bg_thd
+10:01:21 AM     0         -   2391912    0.00    0.00    0.00    0.00    0.00     0  |__jemalloc_bg_thd
+Average:        0   2391906         -   17.00   79.00    0.00    1.00   96.00     -  redis-server
+Average:        0         -   2391906   17.00   79.00    0.00    1.00   96.00     -  |__redis-server
+Average:        0         -   2391908    0.00    0.00    0.00    0.00    0.00     -  |__bio_close_file
+Average:        0         -   2391909    0.00    0.00    0.00    0.00    0.00     -  |__bio_aof
+Average:        0         -   2391910    0.00    0.00    0.00    0.00    0.00     -  |__bio_lazy_free
+Average:        0         -   2391911    0.00    0.00    0.00    0.00    0.00     -  |__jemalloc_bg_thd
+Average:        0         -   2391912    0.00    0.00    0.00    0.00    0.00     -  |__jemalloc_bg_thd
+==== pidstat-snap 10:01:23 phase=3 ====
+Linux 6.6.12+ (openGauss185) 	10/23/2026 	_aarch64_	(256 CPU)
+
+10:01:23 AM   UID      TGID       TID    %usr %system  %guest   %wait    %CPU   CPU  Command
+10:01:24 AM     0   2391906         -   24.00   72.00    0.00    1.00   96.00     1  redis-server
+10:01:24 AM     0         -   2391906   24.00   73.00    0.00    1.00   97.00     1  |__redis-server
+10:01:24 AM     0         -   2391908    0.00    0.00    0.00    0.00    0.00     0  |__bio_close_file
+10:01:24 AM     0         -   2391909    0.00    0.00    0.00    0.00    0.00     0  |__bio_aof
+10:01:24 AM     0         -   2391910    0.00    0.00    0.00    0.00    0.00     0  |__bio_lazy_free
+10:01:24 AM     0         -   2391911    0.00    0.00    0.00    0.00    0.00     0  |__jemalloc_bg_thd
+10:01:24 AM     0         -   2391912    0.00    0.00    0.00    0.00    0.00     0  |__jemalloc_bg_thd
+Average:        0   2391906         -   24.00   72.00    0.00    1.00   96.00     -  redis-server
+Average:        0         -   2391906   24.00   73.00    0.00    1.00   97.00     -  |__redis-server
+Average:        0         -   2391908    0.00    0.00    0.00    0.00    0.00     -  |__bio_close_file
+Average:        0         -   2391909    0.00    0.00    0.00    0.00    0.00     -  |__bio_aof
+Average:        0         -   2391910    0.00    0.00    0.00    0.00    0.00     -  |__bio_lazy_free
+Average:        0         -   2391911    0.00    0.00    0.00    0.00    0.00     -  |__jemalloc_bg_thd
+Average:        0         -   2391912    0.00    0.00    0.00    0.00    0.00     -  |__jemalloc_bg_thd
+==== pidstat-snap 10:01:26 phase=3 ====
+Linux 6.6.12+ (openGauss185) 	10/23/2026 	_aarch64_	(256 CPU)
+
+10:01:26 AM   UID      TGID       TID    %usr %system  %guest   %wait    %CPU   CPU  Command
+10:01:27 AM     0   2391906         -   20.00   77.00    0.00    1.00   97.00     0  redis-server
+10:01:27 AM     0         -   2391906   19.00   77.00    0.00    1.00   96.00     0  |__redis-server
+10:01:27 AM     0         -   2391908    0.00    0.00    0.00    0.00    0.00     0  |__bio_close_file
+10:01:27 AM     0         -   2391909    0.00    0.00    0.00    0.00    0.00     0  |__bio_aof
+10:01:27 AM     0         -   2391910    0.00    0.00    0.00    0.00    0.00     0  |__bio_lazy_free
+10:01:27 AM     0         -   2391911    0.00    0.00    0.00    0.00    0.00     0  |__jemalloc_bg_thd
+10:01:27 AM     0         -   2391912    0.00    0.00    0.00    0.00    0.00     0  |__jemalloc_bg_thd
+Average:        0   2391906         -   20.00   77.00    0.00    1.00   97.00     -  redis-server
+Average:        0         -   2391906   19.00   77.00    0.00    1.00   96.00     -  |__redis-server
+Average:        0         -   2391908    0.00    0.00    0.00    0.00    0.00     -  |__bio_close_file
+Average:        0         -   2391909    0.00    0.00    0.00    0.00    0.00     -  |__bio_aof
+Average:        0         -   2391910    0.00    0.00    0.00    0.00    0.00     -  |__bio_lazy_free
+Average:        0         -   2391911    0.00    0.00    0.00    0.00    0.00     -  |__jemalloc_bg_thd
+Average:        0         -   2391912    0.00    0.00    0.00    0.00    0.00     -  |__jemalloc_bg_thd
+==== pidstat-snap 10:01:29 phase=3 ====
+Linux 6.6.12+ (openGauss185) 	10/23/2026 	_aarch64_	(256 CPU)
+
+10:01:29 AM   UID      TGID       TID    %usr %system  %guest   %wait    %CPU   CPU  Command
+10:01:30 AM     0   2391906         -   24.00   73.00    0.00    1.00   97.00     1  redis-server
+10:01:30 AM     0         -   2391906   23.00   73.00    0.00    1.00   96.00     1  |__redis-server
+10:01:30 AM     0         -   2391908    0.00    0.00    0.00    0.00    0.00     0  |__bio_close_file
+10:01:30 AM     0         -   2391909    0.00    0.00    0.00    0.00    0.00     0  |__bio_aof
+10:01:30 AM     0         -   2391910    0.00    0.00    0.00    0.00    0.00     0  |__bio_lazy_free
+10:01:30 AM     0         -   2391911    0.00    0.00    0.00    0.00    0.00     0  |__jemalloc_bg_thd
+10:01:30 AM     0         -   2391912    0.00    0.00    0.00    0.00    0.00     0  |__jemalloc_bg_thd
+Average:        0   2391906         -   24.00   73.00    0.00    1.00   97.00     -  redis-server
+Average:        0         -   2391906   23.00   73.00    0.00    1.00   96.00     -  |__redis-server
+Average:        0         -   2391908    0.00    0.00    0.00    0.00    0.00     -  |__bio_close_file
+Average:        0         -   2391909    0.00    0.00    0.00    0.00    0.00     -  |__bio_aof
+Average:        0         -   2391910    0.00    0.00    0.00    0.00    0.00     -  |__bio_lazy_free
+Average:        0         -   2391911    0.00    0.00    0.00    0.00    0.00     -  |__jemalloc_bg_thd
+Average:        0         -   2391912    0.00    0.00    0.00    0.00    0.00     -  |__jemalloc_bg_thd
+==== pidstat-snap 10:01:32 phase=3 ====
+Linux 6.6.12+ (openGauss185) 	10/23/2026 	_aarch64_	(256 CPU)
+
+10:01:32 AM   UID      TGID       TID    %usr %system  %guest   %wait    %CPU   CPU  Command
+10:01:33 AM     0   2391906         -   20.00   75.00    0.00    0.00   95.00     0  redis-server
+10:01:33 AM     0         -   2391906   21.00   75.00    0.00    0.00   96.00     0  |__redis-server
+10:01:33 AM     0         -   2391908    0.00    0.00    0.00    0.00    0.00     0  |__bio_close_file
+10:01:33 AM     0         -   2391909    0.00    0.00    0.00    0.00    0.00     0  |__bio_aof
+10:01:33 AM     0         -   2391910    0.00    0.00    0.00    0.00    0.00     0  |__bio_lazy_free
+10:01:33 AM     0         -   2391911    0.00    0.00    0.00    0.00    0.00     1  |__jemalloc_bg_thd
+10:01:33 AM     0         -   2391912    0.00    0.00    0.00    0.00    0.00     0  |__jemalloc_bg_thd
+Average:        0   2391906         -   20.00   75.00    0.00    0.00   95.00     -  redis-server
+Average:        0         -   2391906   21.00   75.00    0.00    0.00   96.00     -  |__redis-server
+Average:        0         -   2391908    0.00    0.00    0.00    0.00    0.00     -  |__bio_close_file
+Average:        0         -   2391909    0.00    0.00    0.00    0.00    0.00     -  |__bio_aof
+Average:        0         -   2391910    0.00    0.00    0.00    0.00    0.00     -  |__bio_lazy_free
+Average:        0         -   2391911    0.00    0.00    0.00    0.00    0.00     -  |__jemalloc_bg_thd
+Average:        0         -   2391912    0.00    0.00    0.00    0.00    0.00     -  |__jemalloc_bg_thd
+==== pidstat-snap 10:01:35 phase=3 ====
+Linux 6.6.12+ (openGauss185) 	10/23/2026 	_aarch64_	(256 CPU)
+
+10:01:35 AM   UID      TGID       TID    %usr %system  %guest   %wait    %CPU   CPU  Command
+10:01:36 AM     0   2391906         -   25.00   71.00    0.00    1.00   96.00     1  redis-server
+10:01:36 AM     0         -   2391906   25.00   71.00    0.00    1.00   96.00     1  |__redis-server
+10:01:36 AM     0         -   2391908    0.00    0.00    0.00    0.00    0.00     0  |__bio_close_file
+10:01:36 AM     0         -   2391909    0.00    0.00    0.00    0.00    0.00     0  |__bio_aof
+10:01:36 AM     0         -   2391910    0.00    0.00    0.00    0.00    0.00     0  |__bio_lazy_free
+10:01:36 AM     0         -   2391911    0.00    0.00    0.00    0.00    0.00     0  |__jemalloc_bg_thd
+10:01:36 AM     0         -   2391912    0.00    0.00    0.00    0.00    0.00     0  |__jemalloc_bg_thd
+Average:        0   2391906         -   25.00   71.00    0.00    1.00   96.00     -  redis-server
+Average:        0         -   2391906   25.00   71.00    0.00    1.00   96.00     -  |__redis-server
+Average:        0         -   2391908    0.00    0.00    0.00    0.00    0.00     -  |__bio_close_file
+Average:        0         -   2391909    0.00    0.00    0.00    0.00    0.00     -  |__bio_aof
+Average:        0         -   2391910    0.00    0.00    0.00    0.00    0.00     -  |__bio_lazy_free
+Average:        0         -   2391911    0.00    0.00    0.00    0.00    0.00     -  |__jemalloc_bg_thd
+Average:        0         -   2391912    0.00    0.00    0.00    0.00    0.00     -  |__jemalloc_bg_thd
+==== pidstat-snap 10:01:38 phase=3 ====
+Linux 6.6.12+ (openGauss185) 	10/23/2026 	_aarch64_	(256 CPU)
+
+10:01:38 AM   UID      TGID       TID    %usr %system  %guest   %wait    %CPU   CPU  Command
+10:01:39 AM     0   2391906         -   19.00   78.00    0.00    1.00   97.00     1  redis-server
+10:01:39 AM     0         -   2391906   19.00   78.00    0.00    1.00   97.00     1  |__redis-server
+10:01:39 AM     0         -   2391908    0.00    0.00    0.00    0.00    0.00     0  |__bio_close_file
+10:01:39 AM     0         -   2391909    0.00    0.00    0.00    0.00    0.00     0  |__bio_aof
+10:01:39 AM     0         -   2391910    0.00    0.00    0.00    0.00    0.00     0  |__bio_lazy_free
+10:01:39 AM     0         -   2391911    0.00    0.00    0.00    0.00    0.00     0  |__jemalloc_bg_thd
+10:01:39 AM     0         -   2391912    0.00    0.00    0.00    0.00    0.00     0  |__jemalloc_bg_thd
+Average:        0   2391906         -   19.00   78.00    0.00    1.00   97.00     -  redis-server
+Average:        0         -   2391906   19.00   78.00    0.00    1.00   97.00     -  |__redis-server
+Average:        0         -   2391908    0.00    0.00    0.00    0.00    0.00     -  |__bio_close_file
+Average:        0         -   2391909    0.00    0.00    0.00    0.00    0.00     -  |__bio_aof
+Average:        0         -   2391910    0.00    0.00    0.00    0.00    0.00     -  |__bio_lazy_free
+Average:        0         -   2391911    0.00    0.00    0.00    0.00    0.00     -  |__jemalloc_bg_thd
+Average:        0         -   2391912    0.00    0.00    0.00    0.00    0.00     -  |__jemalloc_bg_thd
+==== pidstat-snap 10:01:41 phase=3 ====
+Linux 6.6.12+ (openGauss185) 	10/23/2026 	_aarch64_	(256 CPU)
+
+10:01:41 AM   UID      TGID       TID    %usr %system  %guest   %wait    %CPU   CPU  Command
+10:01:42 AM     0   2391906         -   16.00   80.00    0.00    1.00   96.00     0  redis-server
+10:01:42 AM     0         -   2391906   16.00   80.00    0.00    1.00   96.00     0  |__redis-server
+10:01:42 AM     0         -   2391908    0.00    0.00    0.00    0.00    0.00     0  |__bio_close_file
+10:01:42 AM     0         -   2391909    0.00    0.00    0.00    0.00    0.00     0  |__bio_aof
+10:01:42 AM     0         -   2391910    0.00    0.00    0.00    0.00    0.00     0  |__bio_lazy_free
+10:01:42 AM     0         -   2391911    0.00    0.00    0.00    0.00    0.00     0  |__jemalloc_bg_thd
+10:01:42 AM     0         -   2391912    0.00    0.00    0.00    0.00    0.00     0  |__jemalloc_bg_thd
+Average:        0   2391906         -   16.00   80.00    0.00    1.00   96.00     -  redis-server
+Average:        0         -   2391906   16.00   80.00    0.00    1.00   96.00     -  |__redis-server
+Average:        0         -   2391908    0.00    0.00    0.00    0.00    0.00     -  |__bio_close_file
+Average:        0         -   2391909    0.00    0.00    0.00    0.00    0.00     -  |__bio_aof
+Average:        0         -   2391910    0.00    0.00    0.00    0.00    0.00     -  |__bio_lazy_free
+Average:        0         -   2391911    0.00    0.00    0.00    0.00    0.00     -  |__jemalloc_bg_thd
+Average:        0         -   2391912    0.00    0.00    0.00    0.00    0.00     -  |__jemalloc_bg_thd
+==== pidstat-snap 10:01:44 phase=3 ====
+Linux 6.6.12+ (openGauss185) 	10/23/2026 	_aarch64_	(256 CPU)
+
+10:01:44 AM   UID      TGID       TID    %usr %system  %guest   %wait    %CPU   CPU  Command
+10:01:45 AM     0   2391906         -   19.00   78.00    0.00    1.00   97.00     0  redis-server
+10:01:45 AM     0         -   2391906   19.00   78.00    0.00    1.00   97.00     0  |__redis-server
+10:01:45 AM     0         -   2391908    0.00    0.00    0.00    0.00    0.00     0  |__bio_close_file
+10:01:45 AM     0         -   2391909    0.00    0.00    0.00    0.00    0.00     0  |__bio_aof
+10:01:45 AM     0         -   2391910    0.00    0.00    0.00    0.00    0.00     0  |__bio_lazy_free
+10:01:45 AM     0         -   2391911    0.00    0.00    0.00    0.00    0.00     1  |__jemalloc_bg_thd
+10:01:45 AM     0         -   2391912    0.00    0.00    0.00    0.00    0.00     0  |__jemalloc_bg_thd
+Average:        0   2391906         -   19.00   78.00    0.00    1.00   97.00     -  redis-server
+Average:        0         -   2391906   19.00   78.00    0.00    1.00   97.00     -  |__redis-server
+Average:        0         -   2391908    0.00    0.00    0.00    0.00    0.00     -  |__bio_close_file
+Average:        0         -   2391909    0.00    0.00    0.00    0.00    0.00     -  |__bio_aof
+Average:        0         -   2391910    0.00    0.00    0.00    0.00    0.00     -  |__bio_lazy_free
+Average:        0         -   2391911    0.00    0.00    0.00    0.00    0.00     -  |__jemalloc_bg_thd
+Average:        0         -   2391912    0.00    0.00    0.00    0.00    0.00     -  |__jemalloc_bg_thd
+==== pidstat-snap 10:01:47 phase=3 ====
+Linux 6.6.12+ (openGauss185) 	10/23/2026 	_aarch64_	(256 CPU)
+
+10:01:47 AM   UID      TGID       TID    %usr %system  %guest   %wait    %CPU   CPU  Command
+10:01:48 AM     0   2391906         -   19.00   77.00    0.00    1.00   96.00     0  redis-server
+10:01:48 AM     0         -   2391906   19.00   77.00    0.00    1.00   96.00     0  |__redis-server
+10:01:48 AM     0         -   2391908    0.00    0.00    0.00    0.00    0.00     0  |__bio_close_file
+10:01:48 AM     0         -   2391909    0.00    0.00    0.00    0.00    0.00     0  |__bio_aof
+10:01:48 AM     0         -   2391910    0.00    0.00    0.00    0.00    0.00     0  |__bio_lazy_free
+10:01:48 AM     0         -   2391911    0.00    0.00    0.00    1.00    0.00     1  |__jemalloc_bg_thd
+10:01:48 AM     0         -   2391912    0.00    0.00    0.00    0.00    0.00     0  |__jemalloc_bg_thd
+Average:        0   2391906         -   19.00   77.00    0.00    1.00   96.00     -  redis-server
+Average:        0         -   2391906   19.00   77.00    0.00    1.00   96.00     -  |__redis-server
+Average:        0         -   2391908    0.00    0.00    0.00    0.00    0.00     -  |__bio_close_file
+Average:        0         -   2391909    0.00    0.00    0.00    0.00    0.00     -  |__bio_aof
+Average:        0         -   2391910    0.00    0.00    0.00    0.00    0.00     -  |__bio_lazy_free
+Average:        0         -   2391911    0.00    0.00    0.00    1.00    0.00     -  |__jemalloc_bg_thd
+Average:        0         -   2391912    0.00    0.00    0.00    0.00    0.00     -  |__jemalloc_bg_thd
+==== pidstat-snap 10:01:50 phase=3 ====
+Linux 6.6.12+ (openGauss185) 	10/23/2026 	_aarch64_	(256 CPU)
+
+10:01:50 AM   UID      TGID       TID    %usr %system  %guest   %wait    %CPU   CPU  Command
+10:01:51 AM     0   2391906         -   23.00   74.00    0.00    1.00   97.00     0  redis-server
+10:01:51 AM     0         -   2391906   23.00   74.00    0.00    1.00   97.00     0  |__redis-server
+10:01:51 AM     0         -   2391908    0.00    0.00    0.00    0.00    0.00     0  |__bio_close_file
+10:01:51 AM     0         -   2391909    0.00    0.00    0.00    0.00    0.00     0  |__bio_aof
+10:01:51 AM     0         -   2391910    0.00    0.00    0.00    0.00    0.00     0  |__bio_lazy_free
+10:01:51 AM     0         -   2391911    0.00    0.00    0.00    0.00    0.00     0  |__jemalloc_bg_thd
+10:01:51 AM     0         -   2391912    0.00    0.00    0.00    0.00    0.00     0  |__jemalloc_bg_thd
+Average:        0   2391906         -   23.00   74.00    0.00    1.00   97.00     -  redis-server
+Average:        0         -   2391906   23.00   74.00    0.00    1.00   97.00     -  |__redis-server
+Average:        0         -   2391908    0.00    0.00    0.00    0.00    0.00     -  |__bio_close_file
+Average:        0         -   2391909    0.00    0.00    0.00    0.00    0.00     -  |__bio_aof
+Average:        0         -   2391910    0.00    0.00    0.00    0.00    0.00     -  |__bio_lazy_free
+Average:        0         -   2391911    0.00    0.00    0.00    0.00    0.00     -  |__jemalloc_bg_thd
+Average:        0         -   2391912    0.00    0.00    0.00    0.00    0.00     -  |__jemalloc_bg_thd
+==== pidstat-snap 10:01:53 phase=3 ====
+Linux 6.6.12+ (openGauss185) 	10/23/2026 	_aarch64_	(256 CPU)
+
+10:01:53 AM   UID      TGID       TID    %usr %system  %guest   %wait    %CPU   CPU  Command
+10:01:54 AM     0   2391906         -   19.00   78.00    0.00    1.00   97.00     1  redis-server
+10:01:54 AM     0         -   2391906   19.00   78.00    0.00    1.00   97.00     1  |__redis-server
+10:01:54 AM     0         -   2391908    0.00    0.00    0.00    0.00    0.00     0  |__bio_close_file
+10:01:54 AM     0         -   2391909    0.00    0.00    0.00    0.00    0.00     0  |__bio_aof
+10:01:54 AM     0         -   2391910    0.00    0.00    0.00    0.00    0.00     0  |__bio_lazy_free
+10:01:54 AM     0         -   2391911    0.00    1.00    0.00    1.00    1.00     0  |__jemalloc_bg_thd
+10:01:54 AM     0         -   2391912    0.00    0.00    0.00    0.00    0.00     0  |__jemalloc_bg_thd
+Average:        0   2391906         -   19.00   78.00    0.00    1.00   97.00     -  redis-server
+Average:        0         -   2391906   19.00   78.00    0.00    1.00   97.00     -  |__redis-server
+Average:        0         -   2391908    0.00    0.00    0.00    0.00    0.00     -  |__bio_close_file
+Average:        0         -   2391909    0.00    0.00    0.00    0.00    0.00     -  |__bio_aof
+Average:        0         -   2391910    0.00    0.00    0.00    0.00    0.00     -  |__bio_lazy_free
+Average:        0         -   2391911    0.00    1.00    0.00    1.00    1.00     -  |__jemalloc_bg_thd
+Average:        0         -   2391912    0.00    0.00    0.00    0.00    0.00     -  |__jemalloc_bg_thd
+==== pidstat-snap 10:01:56 phase=3 ====
+Linux 6.6.12+ (openGauss185) 	10/23/2026 	_aarch64_	(256 CPU)
+
+10:01:56 AM   UID      TGID       TID    %usr %system  %guest   %wait    %CPU   CPU  Command
+10:01:57 AM     0   2391906         -   16.00   80.00    0.00    1.00   96.00     0  redis-server
+10:01:57 AM     0         -   2391906   16.00   81.00    0.00    1.00   97.00     0  |__redis-server
+10:01:57 AM     0         -   2391908    0.00    0.00    0.00    0.00    0.00     0  |__bio_close_file
+10:01:57 AM     0         -   2391909    0.00    0.00    0.00    0.00    0.00     0  |__bio_aof
+10:01:57 AM     0         -   2391910    0.00    0.00    0.00    0.00    0.00     0  |__bio_lazy_free
+10:01:57 AM     0         -   2391911    0.00    0.00    0.00    0.00    0.00     0  |__jemalloc_bg_thd
+10:01:57 AM     0         -   2391912    0.00    0.00    0.00    0.00    0.00     0  |__jemalloc_bg_thd
+Average:        0   2391906         -   16.00   80.00    0.00    1.00   96.00     -  redis-server
+Average:        0         -   2391906   16.00   81.00    0.00    1.00   97.00     -  |__redis-server
+Average:        0         -   2391908    0.00    0.00    0.00    0.00    0.00     -  |__bio_close_file
+Average:        0         -   2391909    0.00    0.00    0.00    0.00    0.00     -  |__bio_aof
+Average:        0         -   2391910    0.00    0.00    0.00    0.00    0.00     -  |__bio_lazy_free
+Average:        0         -   2391911    0.00    0.00    0.00    0.00    0.00     -  |__jemalloc_bg_thd
+Average:        0         -   2391912    0.00    0.00    0.00    0.00    0.00     -  |__jemalloc_bg_thd
+==== pidstat-snap 10:01:59 phase=3 ====
+Linux 6.6.12+ (openGauss185) 	10/23/2026 	_aarch64_	(256 CPU)
+
+10:01:59 AM   UID      TGID       TID    %usr %system  %guest   %wait    %CPU   CPU  Command
+10:02:00 AM     0   2391906         -   20.00   57.00    0.00    1.00   77.00     1  redis-server
+10:02:00 AM     0         -   2391906   20.00   57.00    0.00    1.00   77.00     1  |__redis-server
+10:02:00 AM     0         -   2391908    0.00    0.00    0.00    0.00    0.00     0  |__bio_close_file
+10:02:00 AM     0         -   2391909    0.00    0.00    0.00    0.00    0.00     0  |__bio_aof
+10:02:00 AM     0         -   2391910    0.00    0.00    0.00    0.00    0.00     0  |__bio_lazy_free
+10:02:00 AM     0         -   2391911    0.00    0.00    0.00    0.00    0.00     0  |__jemalloc_bg_thd
+10:02:00 AM     0         -   2391912    0.00    0.00    0.00    0.00    0.00     0  |__jemalloc_bg_thd
+Average:        0   2391906         -   20.00   57.00    0.00    1.00   77.00     -  redis-server
+Average:        0         -   2391906   20.00   57.00    0.00    1.00   77.00     -  |__redis-server
+Average:        0         -   2391908    0.00    0.00    0.00    0.00    0.00     -  |__bio_close_file
+Average:        0         -   2391909    0.00    0.00    0.00    0.00    0.00     -  |__bio_aof
+Average:        0         -   2391910    0.00    0.00    0.00    0.00    0.00     -  |__bio_lazy_free
+Average:        0         -   2391911    0.00    0.00    0.00    0.00    0.00     -  |__jemalloc_bg_thd
+Average:        0         -   2391912    0.00    0.00    0.00    0.00    0.00     -  |__jemalloc_bg_thd
+==== pidstat-snap 10:02:02 phase=0 ====
+Linux 6.6.12+ (openGauss185) 	10/23/2026 	_aarch64_	(256 CPU)
+
+10:02:02 AM   UID      TGID       TID    %usr %system  %guest   %wait    %CPU   CPU  Command
+10:02:03 AM     0   2391906         -    0.00    0.00    0.00    0.00    0.00     0  redis-server
+10:02:03 AM     0         -   2391906    0.00    0.00    0.00    0.00    0.00     0  |__redis-server
+10:02:03 AM     0         -   2391908    0.00    0.00    0.00    0.00    0.00     0  |__bio_close_file
+10:02:03 AM     0         -   2391909    0.00    0.00    0.00    0.00    0.00     0  |__bio_aof
+10:02:03 AM     0         -   2391910    0.00    0.00    0.00    0.00    0.00     0  |__bio_lazy_free
+10:02:03 AM     0         -   2391911    0.00    0.00    0.00    0.00    0.00     1  |__jemalloc_bg_thd
+10:02:03 AM     0         -   2391912    0.00    0.00    0.00    0.00    0.00     0  |__jemalloc_bg_thd
+Average:        0   2391906         -    0.00    0.00    0.00    0.00    0.00     -  redis-server
+Average:        0         -   2391906    0.00    0.00    0.00    0.00    0.00     -  |__redis-server
+Average:        0         -   2391908    0.00    0.00    0.00    0.00    0.00     -  |__bio_close_file
+Average:        0         -   2391909    0.00    0.00    0.00    0.00    0.00     -  |__bio_aof
+Average:        0         -   2391910    0.00    0.00    0.00    0.00    0.00     -  |__bio_lazy_free
+Average:        0         -   2391911    0.00    0.00    0.00    0.00    0.00     -  |__jemalloc_bg_thd
+Average:        0         -   2391912    0.00    0.00    0.00    0.00    0.00     -  |__jemalloc_bg_thd
+==== pidstat-snap 10:02:05 phase=0 ====
+Linux 6.6.12+ (openGauss185) 	10/23/2026 	_aarch64_	(256 CPU)
+
+10:02:05 AM   UID      TGID       TID    %usr %system  %guest   %wait    %CPU   CPU  Command
+10:02:06 AM     0   2391906         -    0.00    0.00    0.00    0.00    0.00     0  redis-server
+10:02:06 AM     0         -   2391906    1.00    0.00    0.00    0.00    1.00     0  |__redis-server
+10:02:06 AM     0         -   2391908    0.00    0.00    0.00    0.00    0.00     0  |__bio_close_file
+10:02:06 AM     0         -   2391909    0.00    0.00    0.00    0.00    0.00     0  |__bio_aof
+10:02:06 AM     0         -   2391910    0.00    0.00    0.00    0.00    0.00     0  |__bio_lazy_free
+10:02:06 AM     0         -   2391911    0.00    1.00    0.00    0.00    1.00     1  |__jemalloc_bg_thd
+10:02:06 AM     0         -   2391912    0.00    0.00    0.00    0.00    0.00     0  |__jemalloc_bg_thd
+Average:        0   2391906         -    0.00    0.00    0.00    0.00    0.00     -  redis-server
+Average:        0         -   2391906    1.00    0.00    0.00    0.00    1.00     -  |__redis-server
+Average:        0         -   2391908    0.00    0.00    0.00    0.00    0.00     -  |__bio_close_file
+Average:        0         -   2391909    0.00    0.00    0.00    0.00    0.00     -  |__bio_aof
+Average:        0         -   2391910    0.00    0.00    0.00    0.00    0.00     -  |__bio_lazy_free
+Average:        0         -   2391911    0.00    1.00    0.00    0.00    1.00     -  |__jemalloc_bg_thd
+Average:        0         -   2391912    0.00    0.00    0.00    0.00    0.00     -  |__jemalloc_bg_thd
+==== pidstat-snap 10:02:08 phase=0 ====
+Linux 6.6.12+ (openGauss185) 	10/23/2026 	_aarch64_	(256 CPU)
+
+10:02:08 AM   UID      TGID       TID    %usr %system  %guest   %wait    %CPU   CPU  Command
+10:02:09 AM     0   2391906         -    0.00    1.00    0.00    0.00    1.00     1  redis-server
+10:02:09 AM     0         -   2391906    0.00    0.00    0.00    0.00    0.00     1  |__redis-server
+10:02:09 AM     0         -   2391908    0.00    0.00    0.00    0.00    0.00     0  |__bio_close_file
+10:02:09 AM     0         -   2391909    0.00    0.00    0.00    0.00    0.00     0  |__bio_aof
+10:02:09 AM     0         -   2391910    0.00    0.00    0.00    0.00    0.00     0  |__bio_lazy_free
+10:02:09 AM     0         -   2391911    0.00    1.00    0.00    0.00    1.00     1  |__jemalloc_bg_thd
+10:02:09 AM     0         -   2391912    0.00    0.00    0.00    0.00    0.00     0  |__jemalloc_bg_thd
+Average:        0   2391906         -    0.00    1.00    0.00    0.00    1.00     -  redis-server
+Average:        0         -   2391906    0.00    0.00    0.00    0.00    0.00     -  |__redis-server
+Average:        0         -   2391908    0.00    0.00    0.00    0.00    0.00     -  |__bio_close_file
+Average:        0         -   2391909    0.00    0.00    0.00    0.00    0.00     -  |__bio_aof
+Average:        0         -   2391910    0.00    0.00    0.00    0.00    0.00     -  |__bio_lazy_free
+Average:        0         -   2391911    0.00    1.00    0.00    0.00    1.00     -  |__jemalloc_bg_thd
+Average:        0         -   2391912    0.00    0.00    0.00    0.00    0.00     -  |__jemalloc_bg_thd
+==== pidstat-snap 10:02:11 phase=0 ====
+Linux 6.6.12+ (openGauss185) 	10/23/2026 	_aarch64_	(256 CPU)
+
+10:02:11 AM   UID      TGID       TID    %usr %system  %guest   %wait    %CPU   CPU  Command
+10:02:12 AM     0   2391906         -    0.00    0.00    0.00    0.00    0.00     1  redis-server
+10:02:12 AM     0         -   2391906    0.00    0.00    0.00    0.00    0.00     1  |__redis-server
+10:02:12 AM     0         -   2391908    0.00    0.00    0.00    0.00    0.00     0  |__bio_close_file
+10:02:12 AM     0         -   2391909    0.00    0.00    0.00    0.00    0.00     0  |__bio_aof
+10:02:12 AM     0         -   2391910    0.00    0.00    0.00    0.00    0.00     0  |__bio_lazy_free
+10:02:12 AM     0         -   2391911    0.00    0.00    0.00    0.00    0.00     0  |__jemalloc_bg_thd
+10:02:12 AM     0         -   2391912    0.00    0.00    0.00    0.00    0.00     0  |__jemalloc_bg_thd
+Average:        0   2391906         -    0.00    0.00    0.00    0.00    0.00     -  redis-server
+Average:        0         -   2391906    0.00    0.00    0.00    0.00    0.00     -  |__redis-server
+Average:        0         -   2391908    0.00    0.00    0.00    0.00    0.00     -  |__bio_close_file
+Average:        0         -   2391909    0.00    0.00    0.00    0.00    0.00     -  |__bio_aof
+Average:        0         -   2391910    0.00    0.00    0.00    0.00    0.00     -  |__bio_lazy_free
+Average:        0         -   2391911    0.00    0.00    0.00    0.00    0.00     -  |__jemalloc_bg_thd
+Average:        0         -   2391912    0.00    0.00    0.00    0.00    0.00     -  |__jemalloc_bg_thd

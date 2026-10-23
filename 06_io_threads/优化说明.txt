@@ -1,0 +1,76 @@
+Redis I/O线程——代码修改说明
+============================================================
+
+固定实验基线
+------------
+MGET总聚合：100
+RTT超时定义：单条命令RTT > 5ms
+线程规模：MGET 20、SET 20、热Key GET 40、APPEND 5
+阶段时长：阶段2 30秒、阶段3 60秒
+大Value：200KB
+
+优化目标：在主库2核限制下使用两个Redis I/O线程分担网络读写和协议解析。
+
+具体改动：
+1. 主库和备库增加io-threads 2。
+2. 主库和备库增加io-threads-do-reads yes。
+3. 启动后打印实际I/O线程配置。
+4. C++负载完全保持原始基线。
+5. 不开启lazyfree或输出缓冲区微调，保证只观察I/O线程效果。
+
+I/O线程不会并行执行MGET命令本身，因此重点观察网络高峰期RTT和CPU线程分布。
+
+文件
+----
+客户端源码：stress_test_opt6_io.cpp
+主控脚本：185_master_test_opt6_io.sh
+远端可执行文件：stress_test_opt6_io
+
+编译（在186执行）
+-----------------
+cd /home/s30083118/jdredis
+g++ -O3 -std=c++11 stress_test_opt6_io.cpp -o stress_test_opt6_io -pthread -lhiredis
+
+运行（在185执行）
+-----------------
+cd /home/s30083118/jdredis
+bash ./185_master_test_opt6_io.sh --check
+bash ./185_master_test_opt6_io.sh
+
+验收指标
+--------
+1. CPU峰值和阶段平均值。
+2. RX/TX峰值。
+3. MGET、SET、GET、APPEND平均及最大RTT。
+4. RTT超过5ms的命令数。
+5. 主从复制状态、内存增长和网卡丢包。
+
+对照要求
+--------
+除本文明确列出的优化外，其余负载参数与原始代码保持一致。建议原始基线和本版本各运行至少3次，使用中位数比较。
+
+一键运行并采集验收数据
+----------------------
+在185执行：
+cd /home/s30083118/jdredis
+bash ./collect_opt6_metrics.sh
+
+手动模式：
+bash ./collect_opt6_metrics.sh --manual
+
+只做连接和文件预检：
+bash ./collect_opt6_metrics.sh --check
+
+采集脚本会自动运行对应主控脚本，每2秒记录内存、碎片率、主从offset、复制状态和网卡丢包，并在 acceptance_data/<时间戳>/acceptance_summary.txt 生成验收汇总。
+
+
+七、上传到206
+--------------
+执行 bash collect_opt6_metrics.sh 后，默认把本次完整验收目录上传到：
+/home/s30083118/jdredis/acceptance_data/<优化方案>/<运行时间>/
+
+关闭上传：
+UPLOAD_RESULTS=0 bash collect_opt6_metrics.sh
+
+覆盖连接或目录：
+JUMP_HOST=123.60.114.206 JUMP_PORT=10004 JUMP_DIR=/home/s30083118/jdredis/acceptance_data bash collect_opt6_metrics.sh

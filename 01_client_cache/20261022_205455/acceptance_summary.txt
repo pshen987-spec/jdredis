@@ -1,0 +1,59 @@
+============================================================
+优化验收报告: opt1_client_cache
+运行时间: 20261022_205455
+主控返回码: 0
+采样网卡: enp165s0f0np0
+============================================================
+
+[1] CPU峰值和阶段平均值
+  [阶段2] CPU 最高单线程=96%  平均=95.36%
+  [阶段3] CPU 最高单线程=99%  平均=97.175%
+
+[2] RX/TX峰值
+  [阶段2] 网卡 峰值RX=990138kB/s  峰值TX=1335313kB/s
+  [阶段3] 网卡 峰值RX=666076kB/s  峰值TX=2498204kB/s
+
+[3] MGET/SET/GET/APPEND平均及最大RTT(us)
+[阶段2 RTT(us)] MGET avg=3565 max=17553 | SET avg=2414 max=9525 | GET avg=-1 max=-1 | APPEND avg=-1 max=-1
+[阶段3 RTT(us)] MGET avg=6604 max=66596 | SET avg=5981 max=55282 | GET avg=6323 max=23633 | APPEND avg=5473 max=30978
+[全程 RTT(us)] MGET avg=5144 max=66596 | SET avg=4295 max=55282 | GET avg=6323 max=23633 | APPEND avg=5473 max=30978
+
+[4] 超时统计：其他命令5ms，业务GET 5ms
+阶段2 RTT>5ms=15309
+阶段3 RTT>5ms=562333
+全程 RTT>5ms=577642
+优化特有统计:
+[本地缓存] 命中=0 未命中=0 等待刷新=0
+[缓存服务比例] 目标=80% 业务GET=0 本地返回=0 Redis回源=0 实际=0%
+[阶段3 GET 5ms] 总数=0 成功=0 RTT>5ms=0 失败=0 超时率=0%
+[本地缓存GET RTT(us)] avg=-1 max=-1 p95=-1 p99=-1 n=0
+[Redis回源GET RTT(us)] avg=-1 max=-1 p95=-1 p99=-1 n=0
+[业务GET综合 RTT(us)] avg=-1 max=-1 p95=-1 p99=-1 n=0
+[本地缓存] 命中=1513117 未命中=119 等待刷新=67
+[缓存服务比例] 目标=80% 业务GET=1891962 本地返回=1513117 Redis回源=378845 实际=79.9761%
+[阶段3 GET 5ms] 总数=1891962 成功=1891962 RTT>5ms=307902 失败=0 超时率=16.2742%
+[本地缓存GET RTT(us)] avg=0 max=85 p95=10 p99=10 n=1513117
+[Redis回源GET RTT(us)] avg=6323 max=23633 p95=9000 p99=10500 n=378845
+[业务GET综合 RTT(us)] avg=1266 max=23633 p95=7240 p99=9000 n=1891962
+
+[5] 分阶段内存、复制差值和网卡丢包增量
+阶段2: 内存开始=1075916920 结束=1404790488 增长=328873568 bytes 峰值=1720291368 碎片率末值=1.00
+阶段2: 最大主从offset差=4097791 bytes 复制链路异常采样=0
+阶段2: RX丢包增量=0 TX丢包增量=0 RX错误增量=0 TX错误增量=0
+阶段3: 内存开始=962030176 结束=4763200192 增长=3801170016 bytes 峰值=4892273024 碎片率末值=0.68
+阶段3: 最大主从offset差=4712601 bytes 复制链路异常采样=0
+阶段3: RX丢包增量=0 TX丢包增量=0 RX错误增量=0 TX错误增量=0
+
+[6] 测试结束后的主从状态
+role:master
+connected_slaves:1
+master_repl_offset:126282018922
+role:slave
+master_link_status:up
+slave_repl_offset:126282018922
+
+[7] 本版本Redis配置证据
+
+原始采样: /home/s30083118/jdredis/acceptance_data/20261022_205455/acceptance_samples.csv
+主控结果: /home/s30083118/jdredis/acceptance_data/20261022_205455/results/result_20261022_205455.txt
+客户端输出: /home/s30083118/jdredis/acceptance_data/20261022_205455/logs/client_out_20261022_205455.log

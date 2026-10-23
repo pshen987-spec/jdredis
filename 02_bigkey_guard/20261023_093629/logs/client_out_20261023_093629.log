@@ -1,0 +1,26 @@
+Warning: Permanently added '20.20.21.186' (ED25519) to the list of known hosts.
+
+Authorized users only. All activities may be monitored and reported.
+=== 优化版本: 异常大Key拦截 ===
+MGET总聚合=100  RTT超时阈值=5ms  网络读保护超时=100ms
+  MGET总聚合=100  RTT超时阈值=5ms cache=0 bigkey_guard=1 mget_pipeline=0 soft_ttl=0
+=== 内存预估(约) ===
+  预热数据: 61.0352 GB (大key) + ~78.125 MB (小key)
+  APPEND肥大Key: ~2929.69 MB
+  要求 Redis maxmemory > 上述总和(40w数据约需>=80G, 148可用), 且 maxmemory-policy=noeviction
+  [线程] 阶段2/3 线程数固定为严格文档规模(THREAD_SCALE=1), 无需命令行设置
+
+=== 准备测试数据 ===
+=== 阶段1: 灌入 400000 个key (TTL=1s) ===
+=== 预热完成 ===
+=== 阶段2: 20 x MGET(100keys) + 20 x SET 持续 30s ===
+[阶段2结束] MGET=167537 SET=127380 GET=0 APPEND=0 成功=294917 失败=0 超时=16649
+[APPEND保护] 请求=0 限流拒绝=0 大小拒绝=0
+[阶段2 RTT(us)] MGET avg=3568 max=19302 | SET avg=2654 max=8915 | GET avg=-1 max=-1 | APPEND avg=-1 max=-1
+=== 阶段3: 注入热Key + 恶意APPEND, 持续 60s ===
+=== 停止回收 ===
+[全部结束] MGET=392970 SET=302356 GET=443846 APPEND=0 成功=1139172 失败=0 超时=448571
+[APPEND保护] 请求=15000 限流拒绝=13780 大小拒绝=1220
+[阶段3 RTT(us)] MGET avg=5312 max=68610 | SET avg=4826 max=64264 | GET avg=5398 max=24183 | APPEND avg=-1 max=-1
+[全程 RTT(us)] MGET avg=4568 max=68610 | SET avg=3911 max=64264 | GET avg=5398 max=24183 | APPEND avg=-1 max=-1
+=== 测试结束 ===

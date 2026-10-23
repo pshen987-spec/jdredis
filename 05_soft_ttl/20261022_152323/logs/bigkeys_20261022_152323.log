@@ -1,0 +1,21 @@
+
+# Scanning the entire keyspace to find biggest keys as well as
+# average sizes per key type.  You can use -i 0.1 to sleep 0.1 sec
+# per 100 SCAN commands (not usually needed).
+
+[00.00%] Biggest string found so far '"test:data:normal:95582"' with 1024000 bytes
+[06.90%] Biggest string found so far '"test:data:normal:392941"' with 2048000 bytes
+
+-------- summary -------
+
+Sampled 1927 keys in the keyspace!
+Total key length in bytes is 43764 (avg len 22.71)
+
+Biggest string found '"test:data:normal:392941"' has 2048000 bytes
+
+0 lists with 0 items (00.00% of keys, avg size 0.00)
+0 hashs with 0 fields (00.00% of keys, avg size 0.00)
+1927 strings with 1976320015 bytes (100.00% of keys, avg size 1025594.20)
+0 streams with 0 entries (00.00% of keys, avg size 0.00)
+0 sets with 0 members (00.00% of keys, avg size 0.00)
+0 zsets with 0 members (00.00% of keys, avg size 0.00)
