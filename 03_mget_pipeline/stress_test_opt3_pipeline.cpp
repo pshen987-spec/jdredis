@@ -1,37 +1,49 @@
-#define OPT_CLIENT_CACHE 0
-#define OPT_BIGKEY_GUARD 0
-#define OPT_MGET_PIPELINE 1
-#define OPT_SOFT_TTL 0
 //============================================================================
-// stress_test_v2.cpp
-// 京东Redis "高并发 + 大Value + 热Key + 恶意APPEND" 问题复现压测程序(修订版)
+// stress_test_opt3_pipeline.cpp
+// 方案B(基线口径): 把 "1条 MGET 聚合100键" 拆成 "10批 x 10条独立GET",
+//                  10批进入全局共享连接池(FIFO排队), 由池内K个常驻线程/连接逐批执行.
 //
-// 相对 v1 的关键修复:
-//   1) 预热数据: 40w基础数据，严格按场景全部使用 EX 1；约61GB是累计写入量。
-//   2) 修复 pipeline 刷新死锁: 攒满 PIPELINE 才统一读回复, 末尾 flush 剩余;
-//      (v1 在 i=0 时只追加 1 条命令就 getReply 1000 次, 主线程永久阻塞)
-//   3) 热Key 增加"生命周期维护线程", 每 200ms 重置 EX 1, 保证阶段3始终命中;
-//      (v1 热Key 只有 1s TTL, 1 秒后 40 个读线程全部 MISS, 压测立刻失效)
-//   4) 40w数据(80%大key 200KB + 20%小key 1KB)约需>=80G内存, 148(1.5TiB)可装;
-//   5) 客户端读超时: 阶段2/3用250ms观测"Command timed out"; 预热大pipeline单独
-//      用20s大超时(否则250ms必然超时导致预热自断退出, 已实测复现);
-//   6) 统一所有规模参数(宏), 支持 精简便/完整档 一键切换。
+// 本文件的由来(重要):
+//   以 00_baseline/stress_test_v2.cpp 为基线改写, 只替换"读请求的聚合方式与下发方式".
+//   基线程序与基线结果(00_baseline/20261022_195613)保持不动、不重跑;
+//   本程序用同一场景口径再跑一次, 与冻结的基线数字直接对比.
+//
+// 与基线相同(保证场景可比):
+//   预热40w key(80% 200KiB + 20% 1KiB, 全部 EX 1)、PIPELINE=1000;
+//   key 选取公式(基线 stress_test_v2.cpp:210-211: 请求内位置 k%5==0 -> small,
+//   否则 normal, idx 取 [0,399999] 全区间);
+//   阶段2 20读+20写(SET 每2ms 覆盖 200KiB, EX 1)、阶段3 40热读+5 APPEND×5;
+//   30s+60s、RTT>5ms 判定、100ms 网络读保护超时;
+//   写/热Key/APPEND 的线程数与连接数不变(各1连接).
+//
+// 与参考实现(redis++ std::async + pool.size=20)的对应:
+//   每批一个Pipeline任务, 共享一个固定大小的连接池; 本程序用K个常驻lane线程
+//   (每个lane独占1条连接)实现池, 避免每请求新建线程.
+//
+// 与基线的已知差异(2项, 报告对照时必须都计入):
+//   1) 1个逻辑请求 = 10批 x 10条GET; 基线是1条MGET装100键.
+//   2) 读侧连接数 = PIPE_POOL_CONNS(默认20), 与基线20条读连接一致;
+//      同一请求的10批不再保证同时下发, 逻辑RTT包含排队等待(共享池的代价).
+//      读侧线程 = 20 owner + K lane(基线20), 多出的owner线程只做拆分/汇总/等待.
+//   另: 新增 KeyGET 单命令 RTT/计数; MGET 计数保留, 语义=逻辑100键请求数;
+//   新增"逻辑请求RTT>5ms"计数; 错误回复(-OOM/-MOVED等)单独计数但不改成功/失败判定;
+//   APPEND 内层循环在连接被销毁后立即退出(基线此处会解引用空指针).
 //
 // 编译(压测机需装有 hiredis):
 //   g++ -O3 -std=c++11 stress_test_opt3_pipeline.cpp -o stress_test_opt3_pipeline -pthread -lhiredis
 // 运行:
 //   ./stress_test_opt3_pipeline <redis_ip> <redis_port>
-//====================================================================
+//============================================================================
 #include <hiredis/hiredis.h>
 #include <atomic>
 #include <cerrno>
 #include <chrono>
+#include <condition_variable>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
+#include <deque>
 #include <iostream>
-#include <algorithm>
-#include <cstring>
 #include <mutex>
 #include <random>
 #include <string>
@@ -43,10 +55,9 @@ using std::chrono::milliseconds;
 using std::chrono::microseconds;
 using std::chrono::seconds;
 using std::chrono::steady_clock;
-using std::chrono::system_clock;
 using std::chrono::duration_cast;
 
-//------------------------- 可调规模参数 ------------------------------
+//------------------------- 可调规模参数(与基线完全一致) ------------------------------
 static const int   WARM_KEYS     = 400000;  // 40w基础数据(须能被5整除)
 static const size_t BIG_SIZE     = 200 * 1024; // 大key 200KB
 static const size_t SMALL_SIZE   = 1 * 1024;   // 小key 1KB
@@ -56,8 +67,8 @@ static const int   WRITE_TTL     = 1;       // 压测SET TTL, 模拟真实1s特�
 static const int   STAGE2_SEC    = 30;      // 阶段2时长(文档: 主线程静默等待30秒)
 static const int   STAGE3_SEC    = 60;      // 阶段3时长(文档: 压爆分片并持续60秒)
 
-static const int   MGET_THREADS  = 20;      // 阶段2 MGET线程数(严格按文档: 20个)
-static const int   MGET_KEYS     = 100;     // 单次MGET聚合key数(本轮统一口径100)
+static const int   MGET_THREADS  = 20;      // 阶段2 读线程数(严格按文档: 20个)
+static const int   MGET_KEYS     = 100;     // 单次逻辑请求聚合key数(本轮统一口径100)
 static const int   MGET_GAP_US   = 0;       // 文档MGET线程无间隔疯狂循环 -> 0=不限速
 static const int   SET_THREADS   = 20;      // 阶段2 SET线程数(严格按文档: 20个)
 static const int   SET_GAP_US    = 2000;    // SET间隔(文档: 每2ms覆盖写200KB)
@@ -70,75 +81,24 @@ static const long  WARM_READ_TIMEOUT_MS = 20000; // 预热大pipeline专用读�
 
 static const char* KEY_HOT = "test:hot:activity:global";
 
-
-//--------------------- 可独立开关的优化实验 --------------------------
-#ifndef OPT_CLIENT_CACHE
-#define OPT_CLIENT_CACHE 0
+//------------------ 方案B新增: 拆分参数 + 共享连接池 ------------------
+// 100键 = 10批 x 10条GET; 10批进入同一个全局FIFO队列, 由K个常驻lane线程
+// (每个lane独占1条连接)逐批取出执行. 读侧连接数固定为K, 不随批次数膨胀.
+// 参考实现: std::async 每批一个任务 + 共享连接池 pool.size=20.
+// K可用编译期参数覆盖: g++ ... -DPIPE_POOL_CONNS=40 ...
+#ifndef PIPE_POOL_CONNS
+#define PIPE_POOL_CONNS 20
 #endif
-#ifndef OPT_BIGKEY_GUARD
-#define OPT_BIGKEY_GUARD 0
-#endif
-#ifndef OPT_MGET_PIPELINE
-#define OPT_MGET_PIPELINE 0
-#endif
-#ifndef OPT_SOFT_TTL
-#define OPT_SOFT_TTL 0
-#endif
+static_assert(PIPE_POOL_CONNS > 0, "PIPE_POOL_CONNS 必须大于0");
 
-static const int LOCAL_CACHE_TTL_MS = 500;
-static const size_t MAX_VALUE_SIZE = 300 * 1024;
-static const int APPEND_GLOBAL_LIMIT_PER_SEC = 20;
-static const int MGET_BATCH_SIZE = 10;
-static const int MGET_PIPELINE_DEPTH = 8;
-static const int SOFT_LOGICAL_TTL_MS = 1000;
-static const int SOFT_REDIS_TTL_SEC = 10;
-static const char* KEY_HOT_REFRESH_LOCK = "test:hot:activity:refresh_lock";
-
-static atomic<long long> stat_cache_hit(0), stat_cache_miss(0), stat_cache_wait(0);
-static atomic<long long> stat_append_requested(0), stat_append_rate_limited(0), stat_append_size_rejected(0);
-static atomic<long long> stat_mget_logical(0), stat_mget_logical_timeout(0);
-static atomic<long long> stat_soft_refresh(0), stat_soft_stale(0), stat_soft_lock_failed(0);
-
-static mutex hot_cache_mu;
-static string hot_cache_value;
-static steady_clock::time_point hot_cache_expire = steady_clock::time_point::min();
-static bool hot_cache_refreshing = false;
-
-static mutex append_limit_mu;
-static long long append_limit_second = -1;
-static int append_tokens_used = 0;
-
-static long long epoch_ms() {
-    return duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
-}
-
-static string make_soft_value(const string& payload) {
-    return to_string(epoch_ms() + SOFT_LOGICAL_TTL_MS) + "|" + payload;
-}
-
-static bool soft_value_expired(const redisReply* r) {
-    if (!r || !r->str || r->len < 2) return true;
-    const char* sep = (const char*)memchr(r->str, '|', r->len);
-    if (!sep) return true;
-    string stamp(r->str, sep - r->str);
-    return atoll(stamp.c_str()) < epoch_ms();
-}
-
-static bool allow_append_now() {
-    lock_guard<mutex> lock(append_limit_mu);
-    long long sec = epoch_ms() / 1000;
-    if (sec != append_limit_second) {
-        append_limit_second = sec;
-        append_tokens_used = 0;
-    }
-    if (append_tokens_used >= APPEND_GLOBAL_LIMIT_PER_SEC) return false;
-    ++append_tokens_used;
-    return true;
-}
-//---------------------------------------------------------------------
+static const int MGET_BATCH_SIZE = 10;   // 每批GET条数
+static const int MGET_BATCHES    = MGET_KEYS / MGET_BATCH_SIZE;  // 批次数(=10)
+static_assert(MGET_KEYS % MGET_BATCH_SIZE == 0,
+              "MGET_KEYS 必须能被 MGET_BATCH_SIZE 整除");
+static_assert(MGET_BATCHES * MGET_BATCH_SIZE == MGET_KEYS,
+              "拆分后必须正好覆盖全部 MGET_KEYS");
 
 // 线程放大系数 THREAD_SCALE 固定为 1(严格按文档), 不再提供命令行参数
-// (该系数仅放大阶段2/3线程数, 不改预热与各命令规模; 如需更大压力改这里并重编译)
 static int THREAD_SCALE = 1;
 //---------------------------------------------------------------------
 
@@ -147,14 +107,17 @@ static atomic<bool> phase3_signal(false);
 
 static atomic<long long> stat_ok(0), stat_fail(0), stat_timeout(0);
 static atomic<long long> stat_mget(0), stat_set(0), stat_get(0), stat_append(0);
+// 方案B新增: KeyGET命令数(已发出)、逻辑请求失败数、逻辑请求超时数、错误回复数
+static atomic<long long> stat_kget(0), stat_mfail(0), stat_mto(0), stat_err(0);
 
-// RTT 统计: 0=MGET 1=SET 2=GET 3=APPEND; 阶段2结束做快照, 阶段3 = 全程-快照
-static const int RTT_MGET=0, RTT_SET=1, RTT_GET=2, RTT_APPEND=3;
-static atomic<long long> rtt_sum[4];
-static atomic<long long> rtt_n[4];
-static atomic<long long> rtt_max[4];    // 全程最大(us)
-static atomic<long long> ph3_max[4];    // 阶段3期间最大(us, phase3_signal 后才更新)
-static long long s2_sum[4]={0}, s2_n[4]={0}, s2_max[4]={0};   // 阶段2结束快照
+// RTT 统计: 0=MGET(逻辑100键) 1=KeyGET(单键) 2=SET 3=GET 4=APPEND
+static const int RTT_MGET=0, RTT_KGET=1, RTT_SET=2, RTT_GET=3, RTT_APPEND=4;
+static const int RTT_KINDS=5;
+static atomic<long long> rtt_sum[RTT_KINDS];
+static atomic<long long> rtt_n[RTT_KINDS];
+static atomic<long long> rtt_max[RTT_KINDS];    // 全程最大(us)
+static atomic<long long> ph3_max[RTT_KINDS];    // 阶段3期间最大(us, phase3_signal 后才更新)
+static long long s2_sum[RTT_KINDS]={0}, s2_n[RTT_KINDS]={0}, s2_max[RTT_KINDS]={0};   // 阶段2结束快照
 
 // key 命名与预热阶段保持一致:
 //   i%5==0 -> test:data:small:<idx>   (占 1/5)
@@ -193,6 +156,11 @@ static bool flush_replies(redisContext* c, int n) {
     return true;
 }
 
+static inline void update_max(atomic<long long>& slot, long long v) {
+    long long cur = slot.load();
+    while (v > cur && !slot.compare_exchange_weak(cur, v)) {}
+}
+
 // 统一处理一条命令的结果: 命令总耗时>RTT_TIMEOUT_US 计业务超时(命令级判定,替代"连续无字节"语义);
 //   断连时重置连接以便重连; 成功时累计RTT(客户端发出->收到回复)
 static inline void handle_reply(redisContext*& c, redisReply* r,
@@ -201,17 +169,14 @@ static inline void handle_reply(redisContext*& c, redisReply* r,
     if (r) {
         long long dt = (long long)duration_cast<microseconds>(steady_clock::now() - t0).count();
         if (dt > RTT_TIMEOUT_US) stat_timeout.fetch_add(1);   // 命令级超时: 总耗时>5ms 计超时
+        if (r->type == REDIS_REPLY_ERROR) stat_err.fetch_add(1);  // 只计数, 不改变成功/失败判定(与基线同义)
         freeReplyObject(r);
         stat_ok.fetch_add(1);
         tag.fetch_add(1);
         rtt_sum[kind].fetch_add(dt);
         rtt_n[kind].fetch_add(1);
-        long long cur = rtt_max[kind].load();
-        while (dt > cur && !rtt_max[kind].compare_exchange_weak(cur, dt)) {}
-        if (phase3_signal.load()) {                       // 阶段3期间单独记最大
-            cur = ph3_max[kind].load();
-            while (dt > cur && !ph3_max[kind].compare_exchange_weak(cur, dt)) {}
-        }
+        update_max(rtt_max[kind], dt);
+        if (phase3_signal.load()) update_max(ph3_max[kind], dt);   // 阶段3期间单独记最大
     } else {
         long long dt = (long long)duration_cast<microseconds>(steady_clock::now() - t0).count();
         bool socket_timeout = c && c->err == REDIS_ERR_IO &&
@@ -223,6 +188,18 @@ static inline void handle_reply(redisContext*& c, redisReply* r,
         }
         if (c) { redisFree(c); c = nullptr; }
     }
+}
+
+// hiredis 的 redisAppendCommand 只往 c->obuf 追加, 真正落 socket 发生在
+// redisGetReply/redisBufferWrite 里。这里每批显式 flush, 才能让10个批不等回复
+// 连续发出; 否则10批会退化成"读第1批时才写第1批"的串行.
+static bool flush_obuf(redisContext* c) {
+    int done = 0, guard = 0;
+    while (!done) {
+        if (redisBufferWrite(c, &done) != REDIS_OK) return false;
+        if (!done && ++guard > 100000) return false;   // 无进展保护(阻塞socket正常不会触发)
+    }
+    return true;
 }
 
 // 生成指定大小二进制数据
@@ -238,40 +215,32 @@ static string generate_data(size_t size) {
 }
 
 static void dump_stats(const char* tag) {
-    long long m = stat_mget.load(), s = stat_set.load(),
-              g = stat_get.load(), a = stat_append.load(),
-              ok = stat_ok.load(), f = stat_fail.load(), t = stat_timeout.load();
-    cout << "[" << tag << "] MGET=" << m << " SET=" << s
+    const long long m  = stat_mget.load(),   kg = stat_kget.load(),
+                    s  = stat_set.load(),    g  = stat_get.load(),
+                    a  = stat_append.load(), ok = stat_ok.load(),
+                    f  = stat_fail.load(),   t  = stat_timeout.load(),
+                    mt = stat_mto.load(),    mf = stat_mfail.load(),
+                    er = stat_err.load();
+    cout << "[" << tag << "] MGET=" << m << " KeyGET=" << kg << " SET=" << s
          << " GET=" << g << " APPEND=" << a
          << " 成功=" << ok << " 失败=" << f << " 超时=" << t << endl;
-    if (OPT_CLIENT_CACHE)
-        cout << "[本地缓存] 命中=" << stat_cache_hit.load() << " 未命中=" << stat_cache_miss.load()
-             << " 等待刷新=" << stat_cache_wait.load() << endl;
-    if (OPT_BIGKEY_GUARD)
-        cout << "[APPEND保护] 请求=" << stat_append_requested.load()
-             << " 限流拒绝=" << stat_append_rate_limited.load()
-             << " 大小拒绝=" << stat_append_size_rejected.load() << endl;
-    if (OPT_MGET_PIPELINE)
-        cout << "[MGET逻辑请求] 完成=" << stat_mget_logical.load()
-             << " RTT>5ms=" << stat_mget_logical_timeout.load() << endl;
-    if (OPT_SOFT_TTL)
-        cout << "[逻辑TTL] 刷新=" << stat_soft_refresh.load()
-             << " 返回过期旧值=" << stat_soft_stale.load()
-             << " 未获得刷新锁=" << stat_soft_lock_failed.load() << endl;
+    cout << "[" << tag << "-逻辑请求] 完成=" << m << " 失败=" << mf
+         << " 超时=" << mt << " 错误回复=" << er << endl;
 }
 
 // 打印分阶段 RTT(us): 平均/最大, n=0(该阶段无此命令)显示 -1
 static void dump_rtt_ph(const char* tag, const long long sum[], const long long n[], const long long mx[]) {
-    printf("[%s RTT(us)] MGET avg=%lld max=%lld | SET avg=%lld max=%lld | GET avg=%lld max=%lld | APPEND avg=%lld max=%lld\n",
+    printf("[%s RTT(us)] MGET avg=%lld max=%lld | KeyGET avg=%lld max=%lld | SET avg=%lld max=%lld | GET avg=%lld max=%lld | APPEND avg=%lld max=%lld\n",
         tag,
         n[RTT_MGET]  ? sum[RTT_MGET]/n[RTT_MGET]  : -1, n[RTT_MGET]  ? mx[RTT_MGET]  : -1,
+        n[RTT_KGET]  ? sum[RTT_KGET]/n[RTT_KGET]  : -1, n[RTT_KGET]  ? mx[RTT_KGET]  : -1,
         n[RTT_SET]   ? sum[RTT_SET] /n[RTT_SET]   : -1, n[RTT_SET]   ? mx[RTT_SET]   : -1,
         n[RTT_GET]   ? sum[RTT_GET] /n[RTT_GET]   : -1, n[RTT_GET]   ? mx[RTT_GET]   : -1,
         n[RTT_APPEND]? sum[RTT_APPEND]/n[RTT_APPEND]: -1, n[RTT_APPEND] ? mx[RTT_APPEND] : -1);
 }
 
 // 阶段标记: 把当前所处阶段写入Redis(供185采样按phase分桶统计CPU/网卡/指标)
-//   marker=0 预热/收尾  1未用  2=阶段2  3=阶段3
+//   marker=0 预热/收尾  2=阶段2  3=阶段3
 static void mark_phase(const string& host, int port, const char* val) {
     redisContext* pc = connect_redis(host, port, WARM_READ_TIMEOUT_MS);
     if (!pc) return;
@@ -281,73 +250,206 @@ static void mark_phase(const string& host, int port, const char* val) {
     redisFree(pc);
 }
 
-//---------------------- 阶段2: 日常 MGET 流量 --------------------------
-static void read_worker_mget(string host, int port) {
-    redisContext* c = connect_redis(host, port, READ_TIMEOUT_MS);
+//------------ 阶段2: 日常读流量——方案B: 全局共享连接池 ----------------
+// 数据流:
+//   owner(20个读worker) 生成100键 -> 切10批 -> 10个BatchTask入全局FIFO队列
+//   -> K个lane线程各自从队列取批 -> append 10条GET -> flush -> 读回10条
+//   -> 标记task完成 -> owner等10批全部完成 -> 结算1个逻辑请求.
+// 关键: 读侧连接数固定为PIPE_POOL_CONNS(默认20, 与基线20条读连接一致);
+//       批次排队意味着逻辑RTT包含排队时间, 不再等价于"10批同时下发".
+struct BatchOwner {
+    mutex mu;
+    condition_variable cv;
+    int pending = 0;
+};
+
+struct BatchTask {
+    string keys[MGET_BATCH_SIZE];
+    BatchOwner* owner = nullptr;
+    bool ok = false;
+    int appended = 0;
+    int read_cnt = 0;
+};
+
+struct PoolLane {
+    redisContext* c = nullptr;      // lane独占的连接(池内一条)
+    thread th;
+};
+
+static deque<BatchTask*> batch_queue;
+static mutex batch_queue_mu;
+static condition_variable batch_queue_cv;
+static bool pool_quit = false;
+static vector<PoolLane> pool_lanes;
+
+static void pool_lane_main(PoolLane* L, string host, int port) {
+    L->c = connect_redis(host, port, READ_TIMEOUT_MS);
+    if (!L->c) this_thread::sleep_for(milliseconds(200));
+
+    for (;;) {
+        BatchTask* task = nullptr;
+        {
+            unique_lock<mutex> lk(batch_queue_mu);
+            batch_queue_cv.wait(lk, []{ return pool_quit || !batch_queue.empty(); });
+            if (batch_queue.empty()) {          // 只有 pool_quit 且队列空才退出
+                if (pool_quit) break;
+                continue;
+            }
+            task = batch_queue.front();
+            batch_queue.pop_front();
+        }
+
+        bool ok = true;
+        int appended = 0, read_cnt = 0;
+        if (!L->c) {
+            L->c = connect_redis(host, port, READ_TIMEOUT_MS);
+            if (!L->c) { ok = false; this_thread::sleep_for(milliseconds(200)); }
+        }
+        if (ok) {
+            steady_clock::time_point sent[MGET_BATCH_SIZE];   // 本批每条GET的发出时刻
+            for (int k = 0; k < MGET_BATCH_SIZE; ++k) {
+                sent[k] = steady_clock::now();
+                if (redisAppendCommand(L->c, "GET %s", task->keys[k].c_str()) != REDIS_OK) {
+                    ok = false;
+                    break;
+                }
+                ++appended;
+                stat_kget.fetch_add(1);                 // 已发出的GET命令数
+            }
+            if (ok) ok = flush_obuf(L->c);              // 本批10条真正落socket
+
+            while (ok && read_cnt < appended) {
+                redisReply* r = nullptr;
+                if (redisGetReply(L->c, (void**)&r) != REDIS_OK) { ok = false; break; }
+                const long long dt = (long long)duration_cast<microseconds>(
+                    steady_clock::now() - sent[read_cnt]).count();
+                ++read_cnt;
+                if (r) {
+                    if (r->type == REDIS_REPLY_ERROR) stat_err.fetch_add(1);
+                    freeReplyObject(r);
+                    stat_ok.fetch_add(1);
+                    rtt_sum[RTT_KGET].fetch_add(dt);
+                    rtt_n[RTT_KGET].fetch_add(1);
+                    update_max(rtt_max[RTT_KGET], dt);
+                    if (phase3_signal.load()) update_max(ph3_max[RTT_KGET], dt);
+                    if (dt > RTT_TIMEOUT_US) stat_timeout.fetch_add(1);   // 单键GET命令级超时
+                } else {
+                    stat_fail.fetch_add(1);
+                    ok = false;
+                    break;
+                }
+            }
+            if (ok && read_cnt != MGET_BATCH_SIZE) ok = false;   // 本批必须收齐10条
+            if (!ok) {
+                stat_fail.fetch_add(appended - read_cnt);   // 已追加但未读回的命令按失败计
+                if (L->c) {
+                    if (L->c->err) cerr << "  [GET pipeline] " << L->c->errstr << endl;
+                    redisFree(L->c);
+                    L->c = nullptr;
+                }
+            }
+        }
+
+        task->ok = ok;
+        task->appended = appended;
+        task->read_cnt = read_cnt;
+        {
+            lock_guard<mutex> lk(task->owner->mu);
+            --task->owner->pending;
+            if (task->owner->pending == 0) task->owner->cv.notify_one();
+        }
+    }
+    if (L->c) { redisFree(L->c); L->c = nullptr; }
+}
+
+static void start_pool(const string& host, int port) {
+    {
+        lock_guard<mutex> lk(batch_queue_mu);
+        pool_quit = false;
+        batch_queue.clear();
+    }
+    pool_lanes.clear();
+    pool_lanes.resize(PIPE_POOL_CONNS);
+    for (int i = 0; i < PIPE_POOL_CONNS; ++i)
+        pool_lanes[i].th = thread(pool_lane_main, &pool_lanes[i], host, port);
+}
+
+static void stop_pool() {
+    {
+        lock_guard<mutex> lk(batch_queue_mu);
+        pool_quit = true;
+    }
+    batch_queue_cv.notify_all();
+    for (auto& L : pool_lanes) if (L.th.joinable()) L.th.join();
+    pool_lanes.clear();
+}
+
+static void read_worker_pipeline() {
     mt19937 g(random_device{}());
+    vector<string> keys(MGET_KEYS);                     // 预先按基线规则生成100键
 
     while (!stop_signal.load()) {
-        if (!c) { c = connect_redis(host, port, READ_TIMEOUT_MS); if (!c) { this_thread::sleep_for(milliseconds(200)); continue; } }
-#if OPT_MGET_PIPELINE
-        const int total_batches = (MGET_KEYS + MGET_BATCH_SIZE - 1) / MGET_BATCH_SIZE;
-        int completed = 0;
-        auto logical_t0 = steady_clock::now();
-        for (int first = 0; first < MGET_KEYS && c; first += MGET_BATCH_SIZE) {
-            int pending = 0;
-            vector<steady_clock::time_point> sent_at;
-            for (; pending < MGET_PIPELINE_DEPTH && first < MGET_KEYS && c; ++pending, first += MGET_BATCH_SIZE) {
-                vector<string> keys;
-                vector<const char*> argv;
-                vector<size_t> argvlen;
-                int count = min(MGET_BATCH_SIZE, MGET_KEYS - first);
-                keys.reserve(count);
-                argv.push_back("MGET"); argvlen.push_back(4);
-                for (int k = 0; k < count; ++k) {
-                    int logical_index = first + k;
-                    int idx = pick_full(g);
-                    keys.push_back((logical_index % 5 == 0) ? k_small(idx) : k_normal(idx));
-                    argv.push_back(keys.back().c_str());
-                    argvlen.push_back(keys.back().size());
-                }
-                sent_at.push_back(steady_clock::now());
-                if (redisAppendCommandArgv(c, (int)argv.size(), &argv[0], &argvlen[0]) != REDIS_OK) {
-                    cerr << "[MGET pipeline append] " << c->errstr << endl;
-                    redisFree(c); c = nullptr; break;
-                }
+        // 与基线 stress_test_v2.cpp:210-211 逐字一致的选取规则(按请求内位置 pos%5)
+        for (int pos = 0; pos < MGET_KEYS; ++pos) {
+            const int idx = pick_full(g);
+            keys[pos] = (pos % 5 == 0) ? k_small(idx) : k_normal(idx);
+        }
+
+        // --- 拆: 100键 -> 10批, 准备10个BatchTask(客户端侧开销, 不计入逻辑RTT) ---
+        BatchOwner owner;
+        BatchTask tasks[MGET_BATCHES];
+        {
+            lock_guard<mutex> lk(owner.mu);
+            owner.pending = MGET_BATCHES;
+        }
+        for (int b = 0; b < MGET_BATCHES; ++b) {
+            for (int k = 0; k < MGET_BATCH_SIZE; ++k)
+                tasks[b].keys[k] = keys[b * MGET_BATCH_SIZE + k];
+            tasks[b].owner = &owner;
+        }
+
+        auto t_req = steady_clock::now();               // 逻辑请求起点(=基线MGET的t0, 入队前)
+
+        {
+            lock_guard<mutex> lk(batch_queue_mu);
+            for (int b = 0; b < MGET_BATCHES; ++b)
+                batch_queue.push_back(&tasks[b]);
+        }
+        for (int b = 0; b < MGET_BATCHES; ++b)
+            batch_queue_cv.notify_one();                // 唤醒最多10个lane
+
+        // --- 收: 等10批全部完成(由池内lane线程逐批执行, 可能排队) ---
+        bool req_ok = true;
+        int total_read = 0;
+        {
+            unique_lock<mutex> lk(owner.mu);
+            owner.cv.wait(lk, [&owner]{ return owner.pending == 0; });
+            for (int b = 0; b < MGET_BATCHES; ++b) {
+                total_read += tasks[b].read_cnt;
+                if (!tasks[b].ok) req_ok = false;
             }
-            first -= MGET_BATCH_SIZE; // 抵消内层for最后一次自增，交给外层for推进
-            for (int i = 0; i < pending && c; ++i) {
-                redisReply* r = nullptr;
-                if (redisGetReply(c, (void**)&r) != REDIS_OK) r = nullptr;
-                handle_reply(c, r, stat_mget, RTT_MGET, sent_at[i]);
-                if (c) ++completed;
-            }
         }
-        if (completed == total_batches) {
-            long long logical_us = duration_cast<microseconds>(steady_clock::now() - logical_t0).count();
-            stat_mget_logical.fetch_add(1);
-            if (logical_us > RTT_TIMEOUT_US) stat_mget_logical_timeout.fetch_add(1);
+        if (total_read != MGET_KEYS) req_ok = false;    // 未凑齐100条回复
+
+        // --- 逻辑请求: 与基线 MGET 同义(100键整体端到端; 含批次排队时间) ---
+        const long long ldt =
+            (long long)duration_cast<microseconds>(steady_clock::now() - t_req).count();
+        if (req_ok) {
+            stat_mget.fetch_add(1);
+            rtt_sum[RTT_MGET].fetch_add(ldt);
+            rtt_n[RTT_MGET].fetch_add(1);
+            update_max(rtt_max[RTT_MGET], ldt);
+            if (phase3_signal.load()) update_max(ph3_max[RTT_MGET], ldt);
+            if (ldt > RTT_TIMEOUT_US) stat_mto.fetch_add(1);          // 逻辑请求RTT>5ms
+        } else {
+            stat_mfail.fetch_add(1);                                  // 逻辑请求失败(不计RTT样本)
+            if (ldt > RTT_TIMEOUT_US) stat_mto.fetch_add(1);
         }
-#else
-        vector<const char*> argv;
-        vector<size_t> argvlen;
-        vector<string> keys;
-        keys.reserve(MGET_KEYS);
-        argv.push_back("MGET"); argvlen.push_back(4);
-        for (int k = 0; k < MGET_KEYS; ++k) {
-            int idx = pick_full(g);
-            keys.push_back((k % 5 == 0) ? k_small(idx) : k_normal(idx));
-            argv.push_back(keys.back().c_str());
-            argvlen.push_back(keys.back().size());
-        }
-        auto t0 = steady_clock::now();
-        redisReply* r = (redisReply*)redisCommandArgv(c, (int)argv.size(), &argv[0], &argvlen[0]);
-        handle_reply(c, r, stat_mget, RTT_MGET, t0);
-#endif
+
         this_thread::sleep_for(microseconds(MGET_GAP_US));
     }
-    if (c) redisFree(c);
 }
+
 //---------------- 阶段2: 日常 SET 覆盖写(带1s TTL) ----------------------
 static void write_worker(string host, int port, const string& big) {
     redisContext* c = connect_redis(host, port, READ_TIMEOUT_MS);
@@ -374,56 +476,14 @@ static void hotkey_worker(string host, int port) {
         this_thread::sleep_for(milliseconds(100));
 
     while (!stop_signal.load()) {
-#if OPT_CLIENT_CACHE
-        bool local_hit = false, refresh_owner = false;
-        {
-            lock_guard<mutex> lock(hot_cache_mu);
-            auto now = steady_clock::now();
-            if (!hot_cache_value.empty() && now < hot_cache_expire) {
-                local_hit = true;
-            } else if (hot_cache_refreshing) {
-                if (!hot_cache_value.empty()) local_hit = true; // stale-while-revalidate
-                else stat_cache_wait.fetch_add(1);
-            } else {
-                hot_cache_refreshing = true;
-                refresh_owner = true;
-            }
-        }
-        if (local_hit) {
-            stat_cache_hit.fetch_add(1);
-            this_thread::yield();
-            continue;
-        }
-        if (!refresh_owner) {
-            this_thread::sleep_for(milliseconds(1));
-            continue;
-        }
-#endif
-        if (!c) { c = connect_redis(host, port, READ_TIMEOUT_MS); if (!c) {
-#if OPT_CLIENT_CACHE
-            lock_guard<mutex> lock(hot_cache_mu); hot_cache_refreshing = false;
-#endif
-            this_thread::sleep_for(milliseconds(200)); continue; } }
+        if (!c) { c = connect_redis(host, port, READ_TIMEOUT_MS); if (!c) { this_thread::sleep_for(milliseconds(200)); continue; } }
         auto t0 = steady_clock::now();
         redisReply* r = (redisReply*)redisCommand(c, "GET %s", KEY_HOT);
-#if OPT_SOFT_TTL
-        if (r && soft_value_expired(r)) stat_soft_stale.fetch_add(1);
-#endif
-#if OPT_CLIENT_CACHE
-        if (r && r->type == REDIS_REPLY_STRING && r->str) {
-            lock_guard<mutex> lock(hot_cache_mu);
-            hot_cache_value.assign(r->str, r->len);
-            hot_cache_expire = steady_clock::now() + milliseconds(LOCAL_CACHE_TTL_MS);
-            hot_cache_refreshing = false;
-            stat_cache_miss.fetch_add(1);
-        } else {
-            lock_guard<mutex> lock(hot_cache_mu); hot_cache_refreshing = false;
-        }
-#endif
         handle_reply(c, r, stat_get, RTT_GET, t0);
     }
     if (c) redisFree(c);
 }
+
 //------------- 阶段3: 热Key 生命周期维护(让REX始终命中) ----------------
 static void hotkey_refresher(string host, int port, const string& big) {
     redisContext* c = connect_redis(host, port, READ_TIMEOUT_MS);
@@ -432,36 +492,14 @@ static void hotkey_refresher(string host, int port, const string& big) {
 
     while (!stop_signal.load()) {
         if (!c) { c = connect_redis(host, port, READ_TIMEOUT_MS); if (!c) { this_thread::sleep_for(milliseconds(200)); continue; } }
-#if OPT_SOFT_TTL
-        string token = to_string(epoch_ms()) + "-" + to_string((uintptr_t)&c);
-        redisReply* lock_reply = (redisReply*)redisCommand(c, "SET %s %s NX PX 3000", KEY_HOT_REFRESH_LOCK, token.c_str());
-        bool locked = lock_reply && lock_reply->type == REDIS_REPLY_STATUS;
-        if (lock_reply) freeReplyObject(lock_reply);
-        if (locked) {
-            string soft = make_soft_value(big);
-            auto t0 = steady_clock::now();
-            redisReply* r = (redisReply*)redisCommand(c, "SET %s %b EX %d", KEY_HOT, soft.data(), soft.size(), SOFT_REDIS_TTL_SEC);
-            handle_reply(c, r, stat_set, RTT_SET, t0);
-            if (c) {
-                redisReply* unlock = (redisReply*)redisCommand(c, "DEL %s", KEY_HOT_REFRESH_LOCK);
-                if (unlock) freeReplyObject(unlock);
-            }
-            stat_soft_refresh.fetch_add(1);
-        } else {
-            stat_soft_lock_failed.fetch_add(1);
-        }
-        this_thread::sleep_for(milliseconds(SOFT_LOGICAL_TTL_MS));
-#else
-        auto t0 = steady_clock::now();
-        string initial_hot = OPT_SOFT_TTL ? make_soft_value(big) : big;
-        int hot_ttl = OPT_SOFT_TTL ? SOFT_REDIS_TTL_SEC : 1;
-        redisReply* r = (redisReply*)redisCommand(c, "SET %s %b EX %d", KEY_HOT, initial_hot.data(), initial_hot.size(), hot_ttl);
-        handle_reply(c, r, stat_set, RTT_SET, t0);
-        this_thread::sleep_for(milliseconds(200));
-#endif
+        redisReply* r = (redisReply*)redisCommand(
+            c, "SET %s %b EX 1", KEY_HOT, big.data(), big.size());
+        handle_reply(c, r, stat_set, RTT_SET, steady_clock::now());
+        this_thread::sleep_for(milliseconds(200));   // EX 1 内持续刷新
     }
     if (c) redisFree(c);
 }
+
 //--------------- 阶段3: 恶意 APPEND 造超大Key (200KB->1.2MB) -----------
 static void append_worker(string host, int port, const string& big) {
     redisContext* c = connect_redis(host, port, READ_TIMEOUT_MS);
@@ -473,21 +511,11 @@ static void append_worker(string host, int port, const string& big) {
         if (!c) { c = connect_redis(host, port, READ_TIMEOUT_MS); if (!c) { this_thread::sleep_for(milliseconds(200)); continue; } }
         string key = k_normal(pick_full(g)); // 严格按文档 line243: normal:dis(0,399999) 全随机
         for (int a = 0; a < APPEND_TIMES && !stop_signal.load(); ++a) {
-#if OPT_BIGKEY_GUARD
-            stat_append_requested.fetch_add(1);
-            if (!allow_append_now()) {
-                stat_append_rate_limited.fetch_add(1);
-                continue;
-            }
-            if (BIG_SIZE + big.size() > MAX_VALUE_SIZE) {
-                stat_append_size_rejected.fetch_add(1);
-                continue;
-            }
-#endif
             auto t0 = steady_clock::now();
             redisReply* r = (redisReply*)redisCommand(
                 c, "APPEND %s %b", key.c_str(), big.data(), big.size());
             handle_reply(c, r, stat_append, RTT_APPEND, t0);
+            if (!c) break;   // 断连时handle_reply已销毁连接; 必须退出内层循环, 否则下一条命令解引用空指针
         }
         this_thread::sleep_for(milliseconds(100));
     }
@@ -497,27 +525,40 @@ static void append_worker(string host, int port, const string& big) {
 //----------------------------------------------------------------------
 int main(int argc, char** argv) {
     if (argc >= 2 && string(argv[1]) == "--identify") {
-        cout << "=== 优化版本: MGET拆分与Pipeline ===" << endl;
+        cout << "=== 测试版本: 方案B (MGET拆10批x10 GET Pipeline) ===" << endl;
         cout << "MGET总聚合=100  RTT超时阈值=5ms  网络读保护超时=100ms" << endl;
+        cout << "实现方式: 方案B 每请求100xGET(10批x10, 全局共享连接池, 批次FIFO排队)" << endl;
         return 0;
     }
+    cout << "=== 测试版本: 方案B (MGET拆10批x10 GET Pipeline) ===" << endl;
+    cout << "MGET总聚合=100  RTT超时阈值=5ms  网络读保护超时=100ms" << endl;
+    cout << "实现方式: 方案B 每请求100xGET(10批x10, 全局共享连接池, 批次FIFO排队)" << endl;
+    cout << "[运行配置] 预热TTL=" << WARM_TTL << "s 写TTL=" << WRITE_TTL
+         << "s 大key=" << (BIG_SIZE/1024) << "KiB 小key=" << (SMALL_SIZE/1024) << "KiB"
+         << " 预热key=" << WARM_KEYS << " 逻辑请求=" << MGET_KEYS << "键"
+         << " 拆分=" << MGET_BATCHES << "批x" << MGET_BATCH_SIZE << "GET"
+         << " 连接池=" << PIPE_POOL_CONNS << "(读侧连接固定)"
+         << " 读侧线程=" << (MGET_THREADS * THREAD_SCALE) << "owner+"
+         << PIPE_POOL_CONNS << "lane"
+         << " 线程=" << MGET_THREADS << "读/" << SET_THREADS << "写/"
+         << HOT_THREADS << "热/" << APPEND_THREADS << "APPEND"
+         << " 阶段=" << STAGE2_SEC << "s+" << STAGE3_SEC << "s" << endl;
+    cout << "[变量] 读侧连接=" << PIPE_POOL_CONNS << "(全局共享池, 基线="
+         << (MGET_THREADS * THREAD_SCALE) << "); 连接数不再是自变量;"
+            " 同一请求的10批排队执行, 逻辑RTT含排队等待(共享池的代价)" << endl;
+    cout << "[口径] MGET=逻辑100键请求数; KeyGET=其内部的单键GET命令数(逐条计RTT/超时);"
+            " 成功/失败/超时=命令级; 逻辑请求行单独报100键整体RTT>5ms的个数" << endl;
+
     string redis_host = "127.0.0.1";
     int    redis_port = 6379;
     if (argc >= 2) redis_host = argv[1];
     if (argc >= 3) redis_port = atoi(argv[2]);
-    THREAD_SCALE = 1;   // 固定为1(严格按文档): 忽略命令行第3参数, 测试时无需设置
+    THREAD_SCALE = 1;   // 固定为1(严格按文档): 忽略命令行第3参数
 
-    for (int i = 0; i < 4; ++i) {   // 显式归零 RTT 计数(static atomic 全局数组值需初始化)
+    for (int i = 0; i < RTT_KINDS; ++i) {   // 显式归零 RTT 计数(static atomic 全局数组值需初始化)
         rtt_sum[i].store(0); rtt_n[i].store(0); rtt_max[i].store(0); ph3_max[i].store(0);
     }
 
-    cout << "=== 优化版本: MGET拆分与Pipeline ===" << endl;
-    cout << "MGET总聚合=100  RTT超时阈值=5ms  网络读保护超时=100ms" << endl;
-    cout << "  MGET总聚合=100  RTT超时阈值=5ms"
-         << " cache=" << OPT_CLIENT_CACHE
-         << " bigkey_guard=" << OPT_BIGKEY_GUARD
-         << " mget_pipeline=" << OPT_MGET_PIPELINE
-         << " soft_ttl=" << OPT_SOFT_TTL << endl;
     cout << "=== 内存预估(约) ===" << endl;
     cout << "  预热数据: " << (double)(NORMAL_NUM * BIG_SIZE) / (1024.0*1024.0*1024.0)
          << " GB (大key) + ~" << (double)((WARM_KEYS - NORMAL_NUM) * SMALL_SIZE) / (1024.0*1024.0)
@@ -554,6 +595,9 @@ int main(int argc, char** argv) {
     if (pending > 0 && !flush_replies(c, pending)) goto warm_fail;
     redisFree(c);
     cout << "=== 预热完成 ===" << endl;
+    start_pool(redis_host, redis_port);
+    cout << "[连接池] 读侧 " << PIPE_POOL_CONNS << " 条连接/线程已启动 (基线"
+         << (MGET_THREADS * THREAD_SCALE) << "条)" << endl;
     goto phase2;
 
 warm_fail:
@@ -566,15 +610,17 @@ phase2:
     mark_phase(redis_host, redis_port, "2");  // 分阶段统计: 标记阶段2开始
     const int mget_t = MGET_THREADS * THREAD_SCALE;
     const int set_t  = SET_THREADS  * THREAD_SCALE;
-    cout << "=== 阶段2: " << mget_t << " x MGET(" << MGET_KEYS << "keys) + "
+    cout << "=== 阶段2: " << mget_t << " x 逻辑请求(" << MGET_KEYS << "键="
+         << MGET_BATCHES << "批x" << MGET_BATCH_SIZE << "GET, 共享池"
+         << PIPE_POOL_CONNS << "连接) + "
          << set_t << " x SET 持续 " << STAGE2_SEC << "s ===" << endl;
     vector<thread> workers;
-    for (int i = 0; i < mget_t; ++i) workers.emplace_back(read_worker_mget, redis_host, redis_port);
+    for (int i = 0; i < mget_t; ++i) workers.emplace_back(read_worker_pipeline);
     for (int i = 0; i < set_t; ++i)  workers.emplace_back(write_worker, redis_host, redis_port, big);
 
     this_thread::sleep_for(seconds(STAGE2_SEC));
     dump_stats("阶段2结束");
-    for (int k = 0; k < 4; ++k) {   // 阶段2 RTT 快照 + 打印(此刻只有 MGET/SET)
+    for (int k = 0; k < RTT_KINDS; ++k) {   // 阶段2 RTT 快照 + 打印(此刻只有 MGET/KeyGET/SET)
         s2_sum[k]=rtt_sum[k].load(); s2_n[k]=rtt_n[k].load(); s2_max[k]=rtt_max[k].load();
     }
     dump_rtt_ph("阶段2", s2_sum, s2_n, s2_max);
@@ -583,9 +629,7 @@ phase2:
     mark_phase(redis_host, redis_port, "3");  // 分阶段统计: 标记阶段3开始
     cout << "=== 阶段3: 注入热Key + 恶意APPEND, 持续 " << STAGE3_SEC << "s ===" << endl;
     if (c = connect_redis(redis_host, redis_port, WARM_READ_TIMEOUT_MS)) {
-        string initial_hot = OPT_SOFT_TTL ? make_soft_value(big) : big;
-        int hot_ttl = OPT_SOFT_TTL ? SOFT_REDIS_TTL_SEC : 1;
-        redisReply* r = (redisReply*)redisCommand(c, "SET %s %b EX %d", KEY_HOT, initial_hot.data(), initial_hot.size(), hot_ttl);
+        redisReply* r = (redisReply*)redisCommand(c, "SET %s %b EX 1", KEY_HOT, big.data(), big.size());
         if (r) freeReplyObject(r);
         redisFree(c);
     }
@@ -600,9 +644,10 @@ phase2:
     cout << "=== 停止回收 ===" << endl;
     stop_signal.store(true);
     for (auto& t : workers) if (t.joinable()) t.join();
+    stop_pool();
     dump_stats("全部结束");
-    long long a3[4]={0},n3[4]={0},mx3[4]={0}, aal[4]={0},nal[4]={0},mxal[4]={0};
-    for (int k = 0; k < 4; ++k) {   // 阶段3 = 全程 - 阶段2快照; max3 取阶段3期间峰值
+    long long a3[RTT_KINDS]={0},n3[RTT_KINDS]={0},mx3[RTT_KINDS]={0}, aal[RTT_KINDS]={0},nal[RTT_KINDS]={0},mxal[RTT_KINDS]={0};
+    for (int k = 0; k < RTT_KINDS; ++k) {   // 阶段3 = 全程 - 阶段2快照; max3 取阶段3期间峰值
         a3[k] = rtt_sum[k].load() - s2_sum[k];
         n3[k] = rtt_n[k].load()  - s2_n[k];
         mx3[k] = ph3_max[k].load();

@@ -1,77 +1,137 @@
-优化3：MGET拆分与Pipeline操作手册
-=========================
+方案B：MGET 拆成 10 批 x 10 条 GET Pipeline —— 操作手册（基线口径版）
+====================================================================
 
-统一测试口径
-------------
-MGET总聚合：100 Key
-业务RTT超时判定：5ms；网络读保护超时：100ms
-线程规模：THREAD_SCALE=1
-阶段2：30秒
-阶段3：60秒
+统一口径（与冻结基线 20261022_195613 完全一致，不要改）
+------------------------------------------------------
+逻辑请求：100 Key（基线1条MGET；方案B=100条独立GET，10条/批，进入全局共享连接池）
+连接/线程：方案B读侧 = 全局共享池 K=PIPE_POOL_CONNS(默认20)条连接/K个lane线程 + 20个owner线程(进程约107线程)；基线是20条/20个（进程约87线程）。全进程到6379的连接约86，基线约86。
+          连接数与基线一致，不再是第二自变量；代价是同一请求的10批FIFO排队，逻辑RTT含排队等待。
+          K可用编译期参数覆盖：g++ ... -DPIPE_POOL_CONNS=40 ...
+业务RTT超时：单条命令5ms；网络读保护超时：100ms
+线程规模：20读 / 20写(SET) / 40热Key读 / 5APPEND（THREAD_SCALE=1，客户端已固定，无命令行参数）
+阶段时长：阶段2 30秒 + 阶段3 60秒
+数据模式：预热 WARM_TTL=1、写 WRITE_TTL=1（EX 1，与基线一致；数据不常驻，这是本轮的前提）
+服务端：主6379+备6380，maxmemory=80g、noeviction、io-threads=1、io-threads-do-reads=no
 
-步骤1：将三个文件放到185的 /home/s30083118/jdredis/
----------------------------------------------------------
-185_master_test_opt3_pipeline.sh
-collect_opt3_metrics.sh
-stress_test_opt3_pipeline.cpp
+重要：本轮不重跑基线。对照值来自 00_baseline/20261022_195613（冻结）。
+本口径下命中率只有约1%~3%，MGET回复几乎全NIL，20MB聚合不会发生；
+方案B在本轮的能量化收益只有“单条命令最长占用/回包尖峰是否下降”，
+“20MB拆分的收益”需要数据常驻口径，必须补跑基线，不在本轮范围。
 
-步骤2：在185把C++源码复制到186
+文件清单（3个）
+---------------
+185_master_test_opt3_pipeline.sh   主控：重建主备、启动采样、触发压测、生成 result
+collect_opt3_metrics.sh            采集：起采样 -> 调主控 -> 汇总报告 -> 上传206
+stress_test_opt3_pipeline.cpp      压测客户端源码：基线源码 + 只改聚合/下发方式(10批x10 GET, 全局共享池+批次FIFO)
+
+步骤1：放到185的 /home/s30083118/jdredis/
+------------------------------------------
+把上述3个文件传到185的 /home/s30083118/jdredis/（与基线脚本同一目录即可）。
+
+步骤2：把C++源码复制到186（压测机）
+------------------------------------
+  cd /home/s30083118/jdredis
+  scp stress_test_opt3_pipeline.cpp root@20.20.21.186:/home/s30083118/jdredis/
+
+步骤3：在186重新编译并自证身份
+------------------------------
+  cd /home/s30083118/jdredis
+  g++ -O3 -std=c++11 stress_test_opt3_pipeline.cpp -o stress_test_opt3_pipeline -pthread -lhiredis
+  chmod +x stress_test_opt3_pipeline
+  ./stress_test_opt3_pipeline --identify
+
+必须原样出现这3行（少一行，185的预检会拒绝开跑）：
+  === 测试版本: 方案B (MGET拆10批x10 GET Pipeline) ===
+  MGET总聚合=100  RTT超时阈值=5ms  网络读保护超时=100ms
+  实现方式: 方案B 每请求100xGET(10批x10, 全局共享连接池, 批次FIFO排队)
+不存在方案A对照组，不需要再编第二个二进制。
+
+步骤4：在185做预检（不重建Redis）
 ---------------------------------
-cd /home/s30083118/jdredis
-scp stress_test_opt3_pipeline.cpp root@20.20.21.186:/home/s30083118/jdredis/
+  cd /home/s30083118/jdredis
+  sed -i 's/\r$//' 185_master_test_opt3_pipeline.sh collect_opt3_metrics.sh
+  chmod +x 185_master_test_opt3_pipeline.sh collect_opt3_metrics.sh
+  bash collect_opt3_metrics.sh --selftest    # 只验证冻结基线锚点能否解析
+  bash collect_opt3_metrics.sh --check       # 185->186自动登录 + 二进制三行身份
 
-步骤3：在186重新编译
------------------------
-cd /home/s30083118/jdredis
-g++ -O3 -std=c++11 stress_test_opt3_pipeline.cpp -o stress_test_opt3_pipeline -pthread -lhiredis
-chmod +x stress_test_opt3_pipeline
-ls -l /home/s30083118/jdredis/stress_test_opt3_pipeline
+--selftest 期望：源显示为 .../00_baseline/20261022_195613，
+  阶段2 MGET=166191(@5539/s) MGET_usec/call=20.835，阶段3 MGET_usec/call=31.263；
+  若显示“内置常量”，说明185上没有冻结基线目录，报告[8]会用内置锚点（数字相同），
+  可用 BASELINE_DIR=/path/to/20261022_195613 显式指定。
 
-步骤4：在185准备并预检
--------------------------
-cd /home/s30083118/jdredis
-sed -i 's/\r$//' 185_master_test_opt3_pipeline.sh collect_opt3_metrics.sh
-chmod +x 185_master_test_opt3_pipeline.sh collect_opt3_metrics.sh
-bash collect_opt3_metrics.sh --check
+--check 期望：打印压测程序身份三行；否则按“判定:”行修复（未重建Redis，无副作用）。
 
-预检必须确认185能够登录186，并能找到186上的新编译程序。
+步骤5：正式执行
+---------------
+  cd /home/s30083118/jdredis
+  bash collect_opt3_metrics.sh
 
-步骤5：在185正式执行
------------------------
-cd /home/s30083118/jdredis
-bash collect_opt3_metrics.sh
+耗时约6~10分钟：预热40w key（每实例瞬时约61GiB，EX 1）+ 阶段2 30s + 阶段3 60s + 汇总。
+可用环境变量（按需覆盖，不要改默认口径）：
+  MAXMEM=80g          服务端 maxmemory（与基线一致）
+  CLIENT_HOST=20.20.21.186  CLIENT_DIR=/home/s30083118/jdredis
+  SERVER_HOST=20.20.21.185  REDIS_PORT=6379  REPLICA_PORT=6380
+  UPLOAD_RESULTS=0    不上传206（本地保留）
+  BASELINE_DIR=...    指定冻结基线目录
+连接密码只通过环境变量 CLIENT_PASS / JUMP_PASS 传入，脚本内的默认值不要复制到文档、
+工单或聊天记录里。
 
-只执行采集脚本。采集脚本会调用主控脚本、启动压测、采集指标并上传结果。
+手动模式（不自动 ssh 186）：
+  bash collect_opt3_metrics.sh --manual
+按屏幕提示在186执行 ./stress_test_opt3_pipeline 20.20.21.185 6379，
+并把回显 tee 成 client_out.txt 放回185的采样 logs 目录（否则报告没有客户端统计）。
 
-步骤6：检查新测试口径
------------------------
-客户端输出必须显示本方案版本标识、“MGET总聚合=100”“RTT超时阈值=5ms”“网络读保护超时=100ms”，验收汇总必须显示RTT超过5ms。
-如果MGET仍显示800，或业务RTT阈值仍显示100ms，说明186上的旧程序没有重新编译，本轮数据无效。网络读保护显示100ms属于正常配置。
+步骤6：本轮是否可用——先看身份门禁与[9]
+---------------------------------------
+门禁（采集脚本在上传前自动判，失败拒绝上传）：
+  rc=21 本轮没有 client_out（没真正跑或回显没落盘）
+  rc=22 版本标识不对（二进制不是本目录源码）
+  rc=23 参数口径不是 MGET=100 / 5ms / 100ms
+  rc=24 缺“实现方式: 方案B ...”（跑了基线或旧二进制）
+  rc=25 [运行配置] 不是 预热TTL=1s 写TTL=1s（不是基线口径）
+  rc=26 拆分形状不是 100键=10批x10GET，或运行配置缺“连接池=K”（不是全局共享池版本）
 
-步骤7：检查本方案特有结果
----------------------------
-1. 每个完整逻辑请求为100 Key。
-2. 每个逻辑请求拆为10条MGET(10)，Pipeline深度为8。
-3. MGET平均/最大RTT是单批10-Key子命令口径；完整100-Key逻辑请求只统计完成量和RTT超过5ms数量，当前没有平均/最大RTT。
+报告[9]必须全部 ok，本轮数字才能用于对照：
+  KeyGET = 100 x 逻辑请求(失败=0时严格)；阶段2快照差值在[0,2000+100x阶段2失败]；命令守恒；
+  逻辑请求失败=0；错误回复=0；读侧连接池K(默认20，与基线20一致)。
+任一项 !! 都不要拿这一轮下结论。
 
-步骤8：检查公共验收指标
--------------------------
-1. CPU峰值和阶段平均值。
-2. RX/TX峰值。
-3. 10-Key MGET子批次、SET、GET、APPEND的命令级平均及最大RTT。
-4. 命令级RTT超过5ms的数量，以及完整100-Key逻辑请求超过5ms的数量。
-5. 主从复制状态、内存变化和网卡丢包。
+步骤7：怎么读[8]（与冻结基线逐项对照）
+-------------------------------------
+三个比值（报告[8.4]已自动算好并给出判定）：
+  成本比   = 方案B cmdstat_get usec/call x100 / 基线 cmdstat_mget usec/call
+  逻辑吞吐比 = 方案B 逻辑请求/秒 / 基线 MGET/秒
+  尾延迟比 = 方案B 逻辑RTT max / 基线 MGET max
+判定树（跑前锁定）：
+  A 成本↑ + 尾延迟未降 -> 本口径无净收益；原因写“MGET回复几乎全NIL、20MB未发生”，
+    不得外推为“有数据时也无收益”。
+  B 成本↑ + 尾延迟↓   -> 用吞吐/CPU换尾延迟；按目标取舍。
+  C 成本未升 + 吞吐未降 -> 无副作用，但无收益证据。
+  D 成本未升 + 吞吐下降 -> 先看[9]的KeyGET/逻辑请求是否≈100（批次是否真按10条下发），
+    再核对共享池K是否过小(默认20；K<20排队更重)以及客户端CPU是否被owner线程压满，不要先归因于拆分本身。
 
-步骤9：检查结果目录
---------------------
-185本地：
-/home/s30083118/jdredis/acceptance_data/<运行时间>/
+另外直接看：
+  · 阶段2/3 逻辑吞吐与基线 5539/s、2963/s 的差距；
+  · 命令级超时：基线 阶段2=16772、全程=587818（基线只有命令级总数，没有分类型）；
+  · 命中率：基线 0.85%/2.74%；本口径下命中率不会≥95%，这是预期，不是故障；
+  · 阶段2/3 内存起止：基线 1.34GB->1.22GB、1.00GB->4.79GB，说明数据未常驻。
+
+步骤8：结果目录与上传
+---------------------
+185本地（脚本所在目录/acceptance_data/opt3_mget_pipeline/<运行时间>/；
+若按步骤1放在 /home/s30083118/jdredis/，就是）：
+  /home/s30083118/jdredis/acceptance_data/opt3_mget_pipeline/<运行时间>/
+    logs/      client_out_* / redis_info_* / top_h_* / net_dev_* / master_run_*
+    results/   result_*.txt / result_*.md
+    acceptance_samples.csv  每2秒一行（内存/offset/复制状态/网卡字节与丢包）
+    acceptance_summary.txt  验收汇总（[1]~[9]）
 
 206上传目录：
-/home/s30083118/jdredis/acceptance_data/opt3_mget_pipeline/<运行时间>/
+  /home/s30083118/jdredis/acceptance_data/opt3_mget_pipeline/<运行时间>/
 
-步骤10：手动停止
-----------------
-在185当前运行窗口按 Ctrl+C。
-如果186客户端没有退出，在186执行：
-pkill -f 'stress_test_opt3_pipeline'
+步骤9：中途停止
+---------------
+在185当前窗口 Ctrl+C（采集脚本会停掉自己的采样进程）。
+若186客户端未退出，在186执行：
+  pkill -f 'stress_test_opt3_pipeline'
+服务端不用手动清库：主控下一步会重建主备并 FLUSHALL。

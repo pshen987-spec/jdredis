@@ -1,41 +1,46 @@
 #!/usr/bin/env bash
 #============================================================================
-# 185_master_test_opt3_pipeline.sh —— 双节点 Redis 优化实验：MGET拆分与Pipeline(适配 185/186 万兆/25G 环境)
+# 185_master_test_opt3_pipeline.sh —— 方案B(基线口径)一键主控
 #
-#   本机 = Redis 服务器(主6379+备6380, taskset 绑核: 主2C(0,1)+备2C(2,3)合计4核,
-#          模拟文档"2C实例+备实例", maxmemory 80g 装下文档"40w key",
-#          不开 io-threads, bind 全0)
-#   CLIENT_HOST = 压测机(跑 stress_test_opt3_pipeline 打本机物理网卡, 验证 Bandwidth Exhausted)
+#   本脚本 = 00_baseline/185_master_test.sh + 方案B最小增量:
+#     · 压测程序换成 stress_test_opt3_pipeline(1条MGET -> 10批x10 GET, 全局共享连接池)
+#     · 身份校验多一条"实现方式: 方案B ..."(防止误跑基线或旧版二进制)
+#     · 报告多打印 KeyGET/逻辑请求两套计数与[自检判定]
+#     · 多打印 Redis 关键配置(证明与冻结基线同一套服务端参数)
+#   其余(重建主备、绑核、采样、分阶段统计、网卡/CPU口径)与基线脚本逐行相同,
+#   目的是让本轮数字能和 00_baseline/20261022_195613 的冻结结果直接对比。
+#   基线保持不动、不再重跑。
+#
+#   本机 = Redis 服务器(主6379+备6380, taskset 绑核: 主2C(0,1)+备2C(2,3),
+#          maxmemory 80g 装下文档"40w key", 不开 io-threads, bind 全0)
+#   CLIENT_HOST = 压测机(跑 stress_test_opt3_pipeline 打本机物理网卡)
 #   默认: 本机 20.20.21.185(服务器) -> 压测机 20.20.21.186(25G 链路)
-#   若你想反着来(186 当服务器), 在 186 上跑并覆盖 CLIENT_HOST=20.20.21.185
 #
 # 前置:
 #   1) 压测机(CLIENT_HOST)上已装好 hiredis 并编译出 stress_test_opt3_pipeline
-#      (目录默认 /home/s30083118/jdredis, 可被 CLIENT_DIR 覆盖)
 #   2) 本机有 sysstat(sar) 更佳; 没有会自动降级用 /proc/net/dev
-#   3) 内置压测机连接配置(IP/账号/密码), 用 sshpass 自动密码登录;
-#      本机需装 sshpass(缺则尝试自动安装, 装不上自动降级为手动模式)
+#   3) 内置压测机连接配置, 用 sshpass 自动密码登录(缺则尝试安装, 装不上降级手动)
 #
 # 用法:
-#   bash 185_master_test_opt3_pipeline.sh             # 自动(用 sshpass 密码登压测机)
-#   bash 185_master_test_opt3_pipeline.sh --manual    # 手动(打印压测机要执行的命令, 等待你跑完回车)
-#   bash 185_master_test_opt3_pipeline.sh --check     # 只检查本机依赖和185->186自动登录，不重建Redis
+#   bash 185_master_test_opt3_pipeline.sh             # 自动
+#   bash 185_master_test_opt3_pipeline.sh --manual    # 手动
+#   bash 185_master_test_opt3_pipeline.sh --check     # 只检查依赖和185->186自动登录
 #
 # 环境变量:
-#   CLIENT_HOST=20.20.21.186 CLIENT_USER=root CLIENT_PASS='密码'   (默认压测机; 本机是186服务器时改 20.20.21.185)
-#   SERVER_HOST=20.20.21.185  (压测程序访问的Redis业务网IP；不要依赖 hostname -I 的首个地址)
-#   CLIENT_DIR=/home/s30083118/jdredis MAXMEM=80g REDIS_CPUS_MASTER="0,1" REDIS_CPUS_REPLICA="2,3"
+#   CLIENT_HOST=20.20.21.186 CLIENT_USER=root CLIENT_PASS='密码'
+#   SERVER_HOST=20.20.21.185 CLIENT_DIR=/home/s30083118/jdredis
+#   MAXMEM=80g REDIS_CPUS_MASTER="0,1" REDIS_CPUS_REPLICA="2,3"
 #   REDIS_PORT=6379 REPLICA_PORT=6380 WAIT_SEC=180 LOG_DIR=./logs RESULT_DIR=./results
-#   NET_SPEED=25g|10g|1g (链路口径, 影响网卡报告对比文本: 25G≈3125000kB/s / 万兆≈1130000kB/s / 千兆≈113000kB/s)
-#   THREAD_SCALE=1|N    (透传压测程序, 放大阶段2/3线程数以匹配万兆链路; 默认1=严格按文档)
-#   STEP_SLEEP=5  (各步骤间固定等待秒数)
+#   NET_SPEED=25g|10g|1g STEP_SLEEP=5   (线程数固定=文档规模, 无 THREAD_SCALE)
 #============================================================================
 set -uo pipefail
 
-EXPECTED_CLIENT_BANNER='=== 优化版本: MGET拆分与Pipeline ==='
+EXPECTED_CLIENT_BANNER='=== 测试版本: 方案B'
 EXPECTED_CLIENT_PARAMS='MGET总聚合=100  RTT超时阈值=5ms  网络读保护超时=100ms'
-SCRIPT_VERSION="2026-10-21-opt3"
-CLIENT_HOST="${CLIENT_HOST:-20.20.21.186}"   # 默认压测机; 本机若是186(服务器)请覆盖 20.20.21.185
+EXPECTED_CLIENT_MODE='实现方式: 方案B 每请求100xGET(10批x10, 全局共享连接池, 批次FIFO排队)'
+CLIENT_BIN='stress_test_opt3_pipeline'
+SCRIPT_VERSION="2026-10-26-opt3b-baseline-caliber"
+CLIENT_HOST="${CLIENT_HOST:-20.20.21.186}"   # 默认压测机
 CLIENT_USER="${CLIENT_USER:-root}"
 # 默认密码含有字符 '$'，必须用单引号赋值，避免 Bash 把 "$0" 展开为脚本名。
 # 已设置 CLIENT_PASS 时保留外部值，便于：CLIENT_PASS='...' bash 185_master_test_opt3_pipeline.sh
@@ -48,7 +53,6 @@ REDIS_PORT="${REDIS_PORT:-6379}"
 REPLICA_PORT="${REPLICA_PORT:-6380}"
 MAXMEM="${MAXMEM:-80g}"
 NET_SPEED="${NET_SPEED:-25g}"          # 链路口径: 25g=25G / 10g=万兆 / 1g=千兆(仅影响报告对比文本)
-THREAD_SCALE="${THREAD_SCALE:-1}"      # 透传压测程序: 放大阶段2/3线程(默认1=严格文档; 万兆可加大)
 REDIS_CPUS_MASTER="${REDIS_CPUS_MASTER:-0,1}"
 REDIS_CPUS_REPLICA="${REDIS_CPUS_REPLICA:-2,3}"
 WAIT_SEC="${WAIT_SEC:-180}"
@@ -108,26 +112,36 @@ precheck() {
             || apt-get install -y sshpass >/dev/null 2>&1 || true; }
         local remote_check="" remote_rc=0
         if need sshpass; then
-            remote_check=$(remote "test -x '$CLIENT_DIR/stress_test_opt3_pipeline' && '$CLIENT_DIR/stress_test_opt3_pipeline' --identify" 2>&1) || remote_rc=$?
+            remote_check=$(remote "test -x '$CLIENT_DIR/$CLIENT_BIN' && '$CLIENT_DIR/$CLIENT_BIN' --identify" 2>&1) || remote_rc=$?
         else
             remote_rc=127
             remote_check="本机没有 sshpass，且自动安装失败"
         fi
-        if [ "$remote_rc" -eq 0 ] && [[ "$remote_check" == *"$EXPECTED_CLIENT_BANNER"* ]] && [[ "$remote_check" == *"$EXPECTED_CLIENT_PARAMS"* ]]; then
-            info "压测机连通，压测程序版本和参数正确 -> 全自动(sshpass 密码登录)"
-            info "$EXPECTED_CLIENT_BANNER  $EXPECTED_CLIENT_PARAMS"
+        # 三条身份条件缺一不可: 版本标识 / 参数口径 / 实现方式(防止误跑基线二进制)
+        local ok_banner=0 ok_params=0 ok_mode=0
+        [[ "$remote_check" == *"$EXPECTED_CLIENT_BANNER"* ]] && ok_banner=1
+        [[ "$remote_check" == *"$EXPECTED_CLIENT_PARAMS"* ]] && ok_params=1
+        [[ "$remote_check" == *"$EXPECTED_CLIENT_MODE"* ]]   && ok_mode=1
+        if [ "$remote_rc" -eq 0 ] && [ "$ok_banner" = 1 ] && [ "$ok_params" = 1 ] && [ "$ok_mode" = 1 ]; then
+            info "压测机连通，压测程序身份校验通过 -> 全自动(sshpass 密码登录)"
+            info "  版本标识: $EXPECTED_CLIENT_BANNER"
+            info "  参数口径: $EXPECTED_CLIENT_PARAMS"
+            info "  实现方式: $EXPECTED_CLIENT_MODE"
         else
-            echo "[!!] 压测机自动连接失败；自动模式终止，未重建Redis"
-            echo "     目标: ${CLIENT_USER}@${CLIENT_HOST}"
-            echo "     检查: $CLIENT_DIR/stress_test_opt3_pipeline 必须存在、可执行，且为本目录源码重新编译的版本"
+            echo "[!!] 压测机预检失败；自动模式终止，未重建Redis"
+            echo "     目标: ${CLIENT_USER}@${CLIENT_HOST}:$CLIENT_DIR/$CLIENT_BIN"
             echo "     ssh返回码: $remote_rc"
-            echo "     期望: $EXPECTED_CLIENT_BANNER  $EXPECTED_CLIENT_PARAMS"
+            [ "$ok_banner" = 0 ] && echo "     判定: 缺版本标识 '$EXPECTED_CLIENT_BANNER' -> 可能跑的是基线/旧二进制"
+            [ "$ok_params" = 0 ] && echo "     判定: 缺参数口径 '$EXPECTED_CLIENT_PARAMS' -> 二进制不是本目录源码编译"
+            [ "$ok_mode" = 0 ]   && echo "     判定: 缺实现方式 '$EXPECTED_CLIENT_MODE' -> 不是方案B二进制"
             [ -n "$remote_check" ] && echo "     ssh输出: $remote_check"
+            echo "     处理: 在186重新编译本目录源码, 见 操作手册.txt 步骤2-3"
             echo "     如需明确使用手动模式，请执行: bash 185_master_test_opt3_pipeline.sh --manual"
             return 1
         fi
     fi
-    info "Redis服务IP=$MY_IP  目标压测机=$CLIENT_HOST  模式=$MODE  MAXMEM=$MAXMEM  链路=$NET_SPEED  主库绑核=$REDIS_CPUS_MASTER  备库绑核=$REDIS_CPUS_REPLICA  THREAD_SCALE=$THREAD_SCALE"
+    info "Redis服务IP=$MY_IP  目标压测机=$CLIENT_HOST  模式=$MODE  MAXMEM=$MAXMEM  链路=$NET_SPEED  主库绑核=$REDIS_CPUS_MASTER  备库绑核=$REDIS_CPUS_REPLICA"
+    info "压测口径: 逻辑请求=100键(10批x10 GET, 全局共享连接池; 读侧连接=K(默认20) vs 基线20), 预热TTL=1s/写TTL=1s, 与冻结基线同场景"
 }
 
 #------------------- 1. 重建主备 Redis -------------------
@@ -177,6 +191,14 @@ setup_redis() {
         return 1
     fi
     info "新Redis已确认: 主PID=$new_master 备PID=$new_replica"
+    local io_threads io_reads
+    io_threads=$($RC CONFIG GET io-threads 2>/dev/null | tail -1 | tr -d '\r')
+    io_reads=$($RC CONFIG GET io-threads-do-reads 2>/dev/null | tail -1 | tr -d '\r')
+    if [ "$io_threads" != "1" ] || [ "$io_reads" != "no" ]; then
+        echo "[!!] 基线Redis配置错误: io-threads=$io_threads io-threads-do-reads=$io_reads（期望1/no）"
+        return 1
+    fi
+    info "基线I/O线程配置已确认: io-threads=1 io-threads-do-reads=no"
     $RC2 REPLICAOF 127.0.0.1 "$REDIS_PORT" >/dev/null
     $RC CONFIG SET slowlog-log-slower-than 1000 >/dev/null
     $RC CONFIG SET slowlog-max-len 128 >/dev/null
@@ -221,7 +243,7 @@ start_samplers() {
             >> "$LOG_DIR/redis_info_$TS.log"
         $RC info commandstats 2>/dev/null | awk -v ts="$t" -v p="$ph" \
             '/^cmdstat_(mget|set|get|append):calls/{print ts,"phase="p,$0}' \
-            >> "$LOG_DIR/redis_info_$TS.log"   # 分命令OPS: 每3s记各命令calls, collect按phase切分算增量
+            >> "$LOG_DIR/redis_info_$TS.log"   # 分命令OPS+usec_per_call: collect按phase切分算增量
         sleep 3
       done ) & pid=$!; SAMPLER_PIDS+=($pid)
     # ② 实时OPS(--stat)
@@ -267,7 +289,7 @@ start_samplers() {
 run_test() {
     say "[4] 压测(约6-10分钟: 累计灌入约61GB(EX 1) + 阶段2 30s + 阶段3 60s)"
     if [ "$MODE" = "auto" ]; then
-        remote "cd '$CLIENT_DIR' && ./stress_test_opt3_pipeline '$MY_IP' '$REDIS_PORT' '$THREAD_SCALE'" \
+        remote "cd '$CLIENT_DIR' && ./$CLIENT_BIN '$MY_IP' '$REDIS_PORT'" \
             2>&1 | tee "$LOG_DIR/client_out_$TS.log"
         local test_rc=${PIPESTATUS[0]}
         if [ "$test_rc" -ne 0 ]; then
@@ -277,9 +299,9 @@ run_test() {
     else
         echo "--------------------------------------------------------------"
         echo " 请在压测机($CLIENT_HOST)上手动执行 (本脚本等待 $WAIT_SEC 秒后自动继续, 或按回车):"
-        echo "   cd $CLIENT_DIR && ./stress_test_opt3_pipeline $MY_IP $REDIS_PORT $THREAD_SCALE"
+        echo "   cd $CLIENT_DIR && ./$CLIENT_BIN $MY_IP $REDIS_PORT"
         echo " 若要收集[客户端超时]统计, 用这条代替(保存回显到压测机):"
-        echo "   cd $CLIENT_DIR && ./stress_test_opt3_pipeline $MY_IP $REDIS_PORT $THREAD_SCALE 2>&1 | tee client_out.txt"
+        echo "   cd $CLIENT_DIR && ./$CLIENT_BIN $MY_IP $REDIS_PORT 2>&1 | tee client_out.txt"
         echo " 并按回车前把压测机上 client_out.txt 拷到本机 $LOG_DIR/ 下(否则报告无超时统计)"
         echo "--------------------------------------------------------------"
         read -r -t "$WAIT_SEC" -p "压测机跑完后按回车收集... " || echo "(等待超时, 继续收集)"
@@ -308,7 +330,7 @@ gen_md() {
             }
         }
         END{
-            print "# Redis 压测分阶段结果"
+            print "# Redis 压测分阶段结果 (方案B / 基线口径)"
             print ""
             print "数据来源: " FILENAME
             print ""
@@ -321,10 +343,17 @@ gen_md() {
             printf "| 命中率 | %s | %s |\n", rt[2], rt[3]
             printf "| 网卡 RX/TX | %s / %s | %s / %s |\n", rx[2], tx[2], rx[3], tx[3]
             print ""
-            print "> 口径: 阶段3 = 全量(90s) - 阶段2; 命中率 = hits/(hits+misses); 网卡=峰值kB/s(sar)"
+            print "> 口径: 阶段3 = 全量(90s) - 阶段2; 命中率 = hits/(hits+misses); 网卡=峰值kB/s(/proc/net/dev)"
         }
     ' "$OUTF" > "$MDF"
     echo "  Markdown报告已生成: $MDF"
+}
+
+# 从客户端日志取一个计数(token), 取不到输出 "-"
+ctok() {
+    local v
+    v=$(grep -F "[$2]" "$1" 2>/dev/null | tail -1 | grep -oE "[^A-Za-z]$3=[0-9]+" | head -1 | cut -d= -f2)
+    printf '%s' "${v:--}"
 }
 
 collect() {
@@ -332,8 +361,10 @@ collect() {
     local OUTF="$RESULT_DIR/result_$TS.txt"
     {
     echo "==========================================================="
-    echo " Redis 问题复现 — 双节点压测结果   生成: $(date)"
+    echo " Redis 问题复现 — 方案B(基线口径) 双节点压测结果   生成: $(date)"
     echo " 本机(服务器)=$MY_IP  压测机=$CLIENT_HOST"
+    echo " 压测程序=$CLIENT_BIN  脚本版本=$SCRIPT_VERSION"
+    echo " 对照基线=00_baseline/20261022_195613 (冻结, 不重跑)"
     echo "==========================================================="
 
     # --- ① CPU 单核(top_h 里 redis 主线程最高%CPU) ---
@@ -386,20 +417,45 @@ collect() {
     echo "[客户端] 统计:"
     local f_cli="$(ls -t "$LOG_DIR"/client_out* 2>/dev/null | head -1)"
     if [ -n "$f_cli" ]; then
+        echo "  命令级(KeyGET逐条计):"
         grep -E '\[阶段2结束\]|\[全部结束\]' "$f_cli"
-        grep -E '成功=|失败=|超时=' "$f_cli" | tail -1
-        echo "  [客户端RTT(us)] 时延(avg/max 为命令级单次端到端耗时；MGET为单批10-Key子命令，非完整100-Key逻辑请求):"
+        echo "  逻辑请求级(100键整体, 与基线MGET同义):"
+        grep -E '\[阶段2结束-逻辑请求\]|\[全部结束-逻辑请求\]' "$f_cli"
+        echo "  [客户端RTT(us)] 时延(avg/max; MGET列=100键逻辑请求, KeyGET列=单键GET):"
         grep -E '\[[^]]*RTT\(us\)\]' "$f_cli" | tail -3
-        if grep -q '\[阶段2结束\]' "$f_cli" && grep -q '\[全部结束\]' "$f_cli"; then   # 客户端每秒OPS(累计/阶段时长)
-            m2c=$(grep '\[阶段2结束\]' "$f_cli" | tail -1 | grep -oE '[^A-Za-z]MGET=[0-9]+' | head -1 | cut -d= -f2)
-            s2c=$(grep '\[阶段2结束\]' "$f_cli" | tail -1 | grep -oE '[^A-Za-z]SET=[0-9]+' | head -1 | cut -d= -f2)
-            mt=$(grep '\[全部结束\]' "$f_cli" | tail -1 | grep -oE '[^A-Za-z]MGET=[0-9]+' | head -1 | cut -d= -f2)
-            st=$(grep '\[全部结束\]' "$f_cli" | tail -1 | grep -oE '[^A-Za-z]SET=[0-9]+' | head -1 | cut -d= -f2) # [^A-Za-z] 防匹配到 MGET/APPEND 的子串
-            gt=$(grep '\[全部结束\]' "$f_cli" | tail -1 | grep -oE '[^A-Za-z]GET=[0-9]+' | head -1 | cut -d= -f2)
-            at=$(grep '\[全部结束\]' "$f_cli" | tail -1 | grep -oE '[^A-Za-z]APPEND=[0-9]+' | head -1 | cut -d= -f2)
-            echo "  [客户端每秒OPS] 阶段2(30s): MGET=$(( ${m2c:-0}/30 ))/s SET=$(( ${s2c:-0}/30 ))/s"
-            echo "  [客户端每秒OPS] 阶段3(60s): MGET=$(( (${mt:-0}-${m2c:-0})/60 ))/s SET=$(( (${st:-0}-${s2c:-0})/60 ))/s GET=$(( ${gt:-0}/60 ))/s APPEND=$(( ${at:-0}/60 ))/s"
-            echo "  [客户端每秒OPS] 全量(90s): MGET=$(( ${mt:-0}/90 ))/s SET=$(( ${st:-0}/90 ))/s GET=$(( ${gt:-0}/90 ))/s APPEND=$(( ${at:-0}/90 ))/s"
+        local m2c k2c s2c mt kt st gt at m2to mtto allto allmf err
+        m2c=$(ctok "$f_cli" "阶段2结束"  MGET);  k2c=$(ctok "$f_cli" "阶段2结束"  KeyGET); s2c=$(ctok "$f_cli" "阶段2结束"  SET)
+        mt=$(ctok  "$f_cli" "全部结束"   MGET);  kt=$(ctok  "$f_cli" "全部结束"   KeyGET); st=$(ctok  "$f_cli" "全部结束"   SET)
+        gt=$(ctok  "$f_cli" "全部结束"   GET);   at=$(ctok  "$f_cli" "全部结束"   APPEND)
+        m2to=$(ctok "$f_cli" "阶段2结束-逻辑请求" 超时); mtto=$(ctok "$f_cli" "全部结束-逻辑请求" 超时)
+        allmf=$(ctok "$f_cli" "全部结束-逻辑请求" 失败); err=$(ctok "$f_cli" "全部结束-逻辑请求" 错误回复)
+        echo "  [客户端每秒OPS] 阶段2(30s): 逻辑请求=$(( ${m2c:-0}/30 ))/s KeyGET=$(( ${k2c:-0}/30 ))/s SET=$(( ${s2c:-0}/30 ))/s"
+        echo "  [客户端每秒OPS] 阶段3(60s): 逻辑请求=$(( (${mt:-0}-${m2c:-0})/60 ))/s KeyGET=$(( (${kt:-0}-${k2c:-0})/60 ))/s SET=$(( (${st:-0}-${s2c:-0})/60 ))/s 热GET=$(( ${gt:-0}/60 ))/s APPEND=$(( ${at:-0}/60 ))/s"
+        echo "  [客户端每秒OPS] 全量(90s): 逻辑请求=$(( ${mt:-0}/90 ))/s KeyGET=$(( ${kt:-0}/90 ))/s SET=$(( ${st:-0}/90 ))/s 热GET=$(( ${gt:-0}/90 ))/s APPEND=$(( ${at:-0}/90 ))/s"
+        echo "  [客户端RTT>5ms] 逻辑请求级: 阶段2=$(( ${m2to:-0} )) 阶段3=$(( ${mtto:-0}-${m2to:-0} )) 全程=$(( ${mtto:-0} ))  (逻辑请求失败=$(( ${allmf:-0} )), 错误回复=$(( ${err:-0} )))"
+
+        # ---- 自检判定: 每条都打印 判定+原因, 不靠人翻日志 ----
+        echo "  [自检判定]"
+        local lg=$(( ${mt:-0} + ${allmf:-0} ))
+        if [ "${kt:-0}" -gt 0 ] && [ "$lg" -gt 0 ] && [ $(( ${kt:-0} % 100 )) -eq 0 ] && [ $(( ${kt:-0} / 100 )) -eq "$lg" ]; then
+            echo "    ok  KeyGET = 100 x 逻辑请求: KeyGET=${kt} 逻辑请求(完成+失败)=${lg} -> 100.0"
+        else
+            echo "    !!  KeyGET(${kt:-0}) 与 100 x 逻辑请求(${lg}) 不相等 -> 拆分计数有漏记/重复, 本轮数据不可用于对账"
+        fi
+        local okc f csum resid
+        okc=$(ctok "$f_cli" "全部结束" 成功); f=$(ctok "$f_cli" "全部结束" 失败)
+        csum=$(( ${kt:-0} + ${st:-0} + ${gt:-0} + ${at:-0} ))
+        resid=$(( ${okc:-0} + ${f:-0} - csum ))
+        if [ "${resid:-0}" -eq 0 ]; then
+            echo "    ok  命令守恒: 成功(${okc:-0}) + 失败(${f:-0}) = KeyGET+SET+GET+APPEND(${csum})"
+        elif [ "${resid:-0}" -gt 0 ]; then
+            echo "    判定 命令守恒残差=${resid}: 成功+失败 比 各命令计数多 ${resid}, 即非GET类(SET/热GET/APPEND)写失败的命令数(基线口径下失败命令不计数), 属解释项"
+        else
+            echo "    !!  命令守恒为负(${resid}) -> 计数逻辑有bug, 本轮数据不可信"
+        fi
+        if [ "${err:-0}" -eq 0 ]; then echo "    ok  错误回复=0 (-OOM/-MOVED等未出现)"; else echo "    !!  错误回复=${err} -> 服务端曾返回错误, 需看客户端 [redis错误回复] 原文"; fi
+        if [ "${mt:-0}" -gt 0 ]; then
+            echo "    判定 逻辑请求RTT>5ms 占比=$(awk -v a="${mtto:-0}" -v b="${mt:-0}" 'BEGIN{printf "%.2f%%", 100*a/b}') (${mtto:-0}/${mt})"
         fi
     else
         echo "  未找到 client_out(手动模式186回显丢失; 补救: 186压测时用 tee 保存回显为 client_out_*.log 并放到本机 $LOG_DIR/)"
@@ -467,25 +523,36 @@ collect() {
             fi
         done
     fi
-    # 分命令OPS: 从 commandstats(redis_info 里的 cmdstat_* 行)按 phase 切分, calls增量/阶段时长
+    # 分命令OPS + 服务端usec/call: 从 commandstats(redis_info 里的 cmdstat_* 行)按 phase 切分
     if [ -n "${f_info:-}" ]; then
-        echo "  [分命令OPS] (INFO commandstats, 按phase切分 calls增量/时长):"
+        echo "  [分命令OPS] (INFO commandstats, 按phase切分 calls增量/时长; usec/call=服务端单命令平均耗时):"
         awk '
             $2 ~ /^phase=[23]$/ && $3 ~ /^cmdstat_(mget|set|get|append):calls=/ {
                 split($2,p,"="); ph=p[2]
                 split($3,a,","); split(a[1],c,":"); cm=c[1]; sub(/^cmdstat_/,"",cm)
                 split(c[2],d,"="); calls=d[2]+0
+                split(a[2],u,"="); usec=u[2]+0
                 split($1,t,":"); sec=t[1]*3600+t[2]*60+t[3]
                 k=cm ph
-                if(!(k in has)){ fcall[k]=calls; fsec[k]=sec; has[k]=1 }
-                lcall[k]=calls; lsec[k]=sec
+                if(!(k in has)){ fcall[k]=calls; fsec[k]=sec; fuse[k]=usec; has[k]=1 }
+                lcall[k]=calls; lsec[k]=sec; luse[k]=usec
             }
             END{
                 for(k in has){ ph=substr(k,length(k),1); cm=substr(k,1,length(k)-1)
                     dt=lsec[k]-fsec[k]; inc=lcall[k]-fcall[k]
-                    printf "  [阶段%s] %-6s OPS≈%d (calls增量=%d)\n", ph, cm, (dt>0?inc/dt:0), inc }
+                    uc = (inc>0) ? (luse[k]-fuse[k])/inc : 0
+                    printf "  [阶段%s] %-6s OPS≈%d (calls增量=%d) usec/call≈%.2f\n", ph, cm, (dt>0?inc/dt:0), inc, uc }
             }' "$f_info" | sort -k2,3
     fi
+
+    # --- ⑧ 服务端配置证据(证明与冻结基线同一套服务端参数) ---
+    echo ""
+    echo "[服务端配置] 与基线同口径所需的关键项:"
+    echo -n "  maxmemory="; $RC CONFIG GET maxmemory 2>/dev/null | tail -1
+    echo -n "  maxmemory-policy="; $RC CONFIG GET maxmemory-policy 2>/dev/null | tail -1
+    echo -n "  io-threads="; $RC CONFIG GET io-threads 2>/dev/null | tail -1
+    echo -n "  io-threads-do-reads="; $RC CONFIG GET io-threads-do-reads 2>/dev/null | tail -1
+    echo -n "  appendonly="; $RC CONFIG GET appendonly 2>/dev/null | tail -1
     } > "$OUTF"
     cat "$OUTF"
     gen_md "$OUTF"
@@ -495,7 +562,7 @@ collect() {
 #------------------- 入口(各步骤间固定 sleep + 全程回显已备份到 master_run 日志) -------------------
 precheck || exit 1
 if [ "$CHECK_ONLY" -eq 1 ]; then
-    echo "===== 预检通过：185 可以自动登录186并找到压测程序；未修改Redis ====="
+    echo "===== 预检通过：185 可以自动登录186并找到方案B压测程序；未修改Redis ====="
     exit 0
 fi
 step_gap
