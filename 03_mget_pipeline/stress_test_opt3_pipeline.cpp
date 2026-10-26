@@ -18,12 +18,14 @@
 //
 // 与参考实现(redis++ std::async + pool.size=20)的对应:
 //   每批一个Pipeline任务, 共享一个固定大小的连接池; 本程序用K个常驻lane线程
-//   (每个lane独占1条连接)实现池, 避免每请求新建线程.
+//   (每个lane独占1条连接)实现池, 每个lane一次最多取 PIPE_DEPTH 个批,
+//   避免每请求新建线程, 也避免为了在途量把连接数/线程数放大.
 //
 // 与基线的已知差异(2项, 报告对照时必须都计入):
 //   1) 1个逻辑请求 = 10批 x 10条GET; 基线是1条MGET装100键.
-//   2) 读侧连接数 = PIPE_POOL_CONNS(默认20), 与基线20条读连接一致;
-//      同一请求的10批不再保证同时下发, 逻辑RTT包含排队等待(共享池的代价).
+//   2) 读侧连接数 = PIPE_POOL_CONNS(默认20), 每连接深度 = PIPE_DEPTH(默认10),
+//      在途批上限 = K*D = 200, 在途 key 上限 = 2000; 与基线20条读连接一致.
+//      同一请求的10批是否同时下发取决于队列/深度, 逻辑RTT可能包含排队等待.
 //      读侧线程 = 20 owner + K lane(基线20), 多出的owner线程只做拆分/汇总/等待.
 //   另: 新增 KeyGET 单命令 RTT/计数; MGET 计数保留, 语义=逻辑100键请求数;
 //   新增"逻辑请求RTT>5ms"计数; 错误回复(-OOM/-MOVED等)单独计数但不改成功/失败判定;
@@ -84,12 +86,18 @@ static const char* KEY_HOT = "test:hot:activity:global";
 //------------------ 方案B新增: 拆分参数 + 共享连接池 ------------------
 // 100键 = 10批 x 10条GET; 10批进入同一个全局FIFO队列, 由K个常驻lane线程
 // (每个lane独占1条连接)逐批取出执行. 读侧连接数固定为K, 不随批次数膨胀.
+// 每连接深度 D: 每个lane一次最多取 D 个批, append D*10 条GET, 一次flush,
+// 再读回 D*10 条; 20连接 x 10批 = 200批同时在途, 不需要把K加到200.
 // 参考实现: std::async 每批一个任务 + 共享连接池 pool.size=20.
-// K可用编译期参数覆盖: g++ ... -DPIPE_POOL_CONNS=40 ...
+// K/D可用编译期参数覆盖: g++ ... -DPIPE_POOL_CONNS=20 -DPIPE_DEPTH=10 ...
 #ifndef PIPE_POOL_CONNS
 #define PIPE_POOL_CONNS 20
 #endif
+#ifndef PIPE_DEPTH
+#define PIPE_DEPTH 10
+#endif
 static_assert(PIPE_POOL_CONNS > 0, "PIPE_POOL_CONNS 必须大于0");
+static_assert(PIPE_DEPTH > 0, "PIPE_DEPTH 必须大于0");
 
 static const int MGET_BATCH_SIZE = 10;   // 每批GET条数
 static const int MGET_BATCHES    = MGET_KEYS / MGET_BATCH_SIZE;  // 批次数(=10)
@@ -253,10 +261,10 @@ static void mark_phase(const string& host, int port, const char* val) {
 //------------ 阶段2: 日常读流量——方案B: 全局共享连接池 ----------------
 // 数据流:
 //   owner(20个读worker) 生成100键 -> 切10批 -> 10个BatchTask入全局FIFO队列
-//   -> K个lane线程各自从队列取批 -> append 10条GET -> flush -> 读回10条
-//   -> 标记task完成 -> owner等10批全部完成 -> 结算1个逻辑请求.
-// 关键: 读侧连接数固定为PIPE_POOL_CONNS(默认20, 与基线20条读连接一致);
-//       批次排队意味着逻辑RTT包含排队时间, 不再等价于"10批同时下发".
+//   -> K个lane线程各自从队列一次取最多D批 -> append D*10条GET -> 一次flush
+//   -> 读回 D*10条 -> 标记task完成 -> owner等10批全部完成 -> 结算1个逻辑请求.
+// 关键: 读侧连接数固定为K(默认20), 每连接深度D(默认10), 在途批上限=K*D=200,
+//       在途key上限=2000; 不需要为了在途量把连接数放大到100/150/200.
 struct BatchOwner {
     mutex mu;
     condition_variable cv;
@@ -287,7 +295,10 @@ static void pool_lane_main(PoolLane* L, string host, int port) {
     if (!L->c) this_thread::sleep_for(milliseconds(200));
 
     for (;;) {
-        BatchTask* task = nullptr;
+        // 一次最多取 PIPE_DEPTH 个批: 20连接 x 10批 = 200批同时在途,
+        // 覆盖 20个owner x 10批, 不需要把 K 加到 200.
+        BatchTask* group[PIPE_DEPTH];
+        int n = 0;
         {
             unique_lock<mutex> lk(batch_queue_mu);
             batch_queue_cv.wait(lk, []{ return pool_quit || !batch_queue.empty(); });
@@ -295,52 +306,71 @@ static void pool_lane_main(PoolLane* L, string host, int port) {
                 if (pool_quit) break;
                 continue;
             }
-            task = batch_queue.front();
-            batch_queue.pop_front();
+            while (n < PIPE_DEPTH && !batch_queue.empty()) {
+                group[n++] = batch_queue.front();
+                batch_queue.pop_front();
+            }
         }
 
-        bool ok = true;
+        bool send_ok = true;
         int appended = 0, read_cnt = 0;
         if (!L->c) {
             L->c = connect_redis(host, port, READ_TIMEOUT_MS);
-            if (!L->c) { ok = false; this_thread::sleep_for(milliseconds(200)); }
+            if (!L->c) { send_ok = false; this_thread::sleep_for(milliseconds(200)); }
         }
-        if (ok) {
-            steady_clock::time_point sent[MGET_BATCH_SIZE];   // 本批每条GET的发出时刻
-            for (int k = 0; k < MGET_BATCH_SIZE; ++k) {
-                sent[k] = steady_clock::now();
-                if (redisAppendCommand(L->c, "GET %s", task->keys[k].c_str()) != REDIS_OK) {
-                    ok = false;
-                    break;
-                }
-                ++appended;
-                stat_kget.fetch_add(1);                 // 已发出的GET命令数
+        if (send_ok) {
+            steady_clock::time_point sent[PIPE_DEPTH * MGET_BATCH_SIZE];  // 本组每条GET的发出时刻
+            for (int t = 0; t < n; ++t) {   // 先全部清零, 避免append中途失败时后续任务残留上一轮值
+                group[t]->appended = 0;
+                group[t]->read_cnt = 0;
+                group[t]->ok = false;
             }
-            if (ok) ok = flush_obuf(L->c);              // 本批10条真正落socket
+            for (int t = 0; t < n && send_ok; ++t) {
+                for (int k = 0; k < MGET_BATCH_SIZE; ++k) {
+                    sent[t * MGET_BATCH_SIZE + k] = steady_clock::now();
+                    if (redisAppendCommand(L->c, "GET %s", group[t]->keys[k].c_str()) != REDIS_OK) {
+                        send_ok = false;
+                        break;
+                    }
+                    ++appended;
+                    ++group[t]->appended;
+                    stat_kget.fetch_add(1);                 // 已发出的GET命令数
+                }
+            }
+            if (send_ok) send_ok = flush_obuf(L->c);        // 本组 n*10 条一次落socket
 
-            while (ok && read_cnt < appended) {
-                redisReply* r = nullptr;
-                if (redisGetReply(L->c, (void**)&r) != REDIS_OK) { ok = false; break; }
-                const long long dt = (long long)duration_cast<microseconds>(
-                    steady_clock::now() - sent[read_cnt]).count();
-                ++read_cnt;
-                if (r) {
-                    if (r->type == REDIS_REPLY_ERROR) stat_err.fetch_add(1);
-                    freeReplyObject(r);
-                    stat_ok.fetch_add(1);
-                    rtt_sum[RTT_KGET].fetch_add(dt);
-                    rtt_n[RTT_KGET].fetch_add(1);
-                    update_max(rtt_max[RTT_KGET], dt);
-                    if (phase3_signal.load()) update_max(ph3_max[RTT_KGET], dt);
-                    if (dt > RTT_TIMEOUT_US) stat_timeout.fetch_add(1);   // 单键GET命令级超时
-                } else {
-                    stat_fail.fetch_add(1);
-                    ok = false;
-                    break;
+            int fail_from_task = 0;   // 读失败时: 该任务及其后续任务失败
+            if (send_ok) {
+                while (read_cnt < appended) {
+                    redisReply* r = nullptr;
+                    if (redisGetReply(L->c, (void**)&r) != REDIS_OK) {
+                        send_ok = false;
+                        fail_from_task = read_cnt / MGET_BATCH_SIZE;
+                        break;
+                    }
+                    const int idx = read_cnt;
+                    const long long dt = (long long)duration_cast<microseconds>(
+                        steady_clock::now() - sent[idx]).count();
+                    ++read_cnt;
+                    if (r) {
+                        if (r->type == REDIS_REPLY_ERROR) stat_err.fetch_add(1);
+                        freeReplyObject(r);
+                        stat_ok.fetch_add(1);
+                        rtt_sum[RTT_KGET].fetch_add(dt);
+                        rtt_n[RTT_KGET].fetch_add(1);
+                        update_max(rtt_max[RTT_KGET], dt);
+                        if (phase3_signal.load()) update_max(ph3_max[RTT_KGET], dt);
+                        if (dt > RTT_TIMEOUT_US) stat_timeout.fetch_add(1);   // 单键GET命令级超时
+                        ++group[idx / MGET_BATCH_SIZE]->read_cnt;
+                    } else {
+                        stat_fail.fetch_add(1);
+                        send_ok = false;
+                        fail_from_task = idx / MGET_BATCH_SIZE;
+                        break;
+                    }
                 }
             }
-            if (ok && read_cnt != MGET_BATCH_SIZE) ok = false;   // 本批必须收齐10条
-            if (!ok) {
+            if (!send_ok) {
                 stat_fail.fetch_add(appended - read_cnt);   // 已追加但未读回的命令按失败计
                 if (L->c) {
                     if (L->c->err) cerr << "  [GET pipeline] " << L->c->errstr << endl;
@@ -348,12 +378,30 @@ static void pool_lane_main(PoolLane* L, string host, int port) {
                     L->c = nullptr;
                 }
             }
+
+            // 任务完成判定:
+            //   append/flush 失败 -> 本组所有任务失败(没有完整发出/收回);
+            //   读失败 -> fail_from_task 之前的任务若已收齐10条则成功, 之后失败;
+            //   全部成功 -> 每个任务必须收齐10条.
+            for (int t = 0; t < n; ++t) {
+                bool task_ok = false;
+                if (send_ok) {
+                    task_ok = (group[t]->read_cnt == MGET_BATCH_SIZE);
+                } else if (read_cnt > 0 && t < fail_from_task) {
+                    task_ok = (group[t]->read_cnt == MGET_BATCH_SIZE);
+                }
+                group[t]->ok = task_ok;
+            }
+        } else {
+            for (int t = 0; t < n; ++t) {
+                group[t]->appended = 0;
+                group[t]->read_cnt = 0;
+                group[t]->ok = false;
+            }
         }
 
-        task->ok = ok;
-        task->appended = appended;
-        task->read_cnt = read_cnt;
-        {
+        for (int t = 0; t < n; ++t) {
+            BatchTask* task = group[t];
             lock_guard<mutex> lk(task->owner->mu);
             --task->owner->pending;
             if (task->owner->pending == 0) task->owner->cv.notify_one();
@@ -415,8 +463,9 @@ static void read_worker_pipeline() {
             for (int b = 0; b < MGET_BATCHES; ++b)
                 batch_queue.push_back(&tasks[b]);
         }
-        for (int b = 0; b < MGET_BATCHES; ++b)
-            batch_queue_cv.notify_one();                // 唤醒最多10个lane
+        const int notify_n = (MGET_BATCHES + PIPE_DEPTH - 1) / PIPE_DEPTH;
+        for (int i = 0; i < notify_n; ++i)
+            batch_queue_cv.notify_one();                // D=10时只需唤醒1个lane取走10批
 
         // --- 收: 等10批全部完成(由池内lane线程逐批执行, 可能排队) ---
         bool req_ok = true;
@@ -538,14 +587,17 @@ int main(int argc, char** argv) {
          << " 预热key=" << WARM_KEYS << " 逻辑请求=" << MGET_KEYS << "键"
          << " 拆分=" << MGET_BATCHES << "批x" << MGET_BATCH_SIZE << "GET"
          << " 连接池=" << PIPE_POOL_CONNS << "(读侧连接固定)"
+         << " 深度=" << PIPE_DEPTH << "(每连接在途批)"
          << " 读侧线程=" << (MGET_THREADS * THREAD_SCALE) << "owner+"
          << PIPE_POOL_CONNS << "lane"
          << " 线程=" << MGET_THREADS << "读/" << SET_THREADS << "写/"
          << HOT_THREADS << "热/" << APPEND_THREADS << "APPEND"
          << " 阶段=" << STAGE2_SEC << "s+" << STAGE3_SEC << "s" << endl;
     cout << "[变量] 读侧连接=" << PIPE_POOL_CONNS << "(全局共享池, 基线="
-         << (MGET_THREADS * THREAD_SCALE) << "); 连接数不再是自变量;"
-            " 同一请求的10批排队执行, 逻辑RTT含排队等待(共享池的代价)" << endl;
+         << (MGET_THREADS * THREAD_SCALE) << "); 每连接深度=" << PIPE_DEPTH
+         << " 在途批上限=" << (PIPE_POOL_CONNS * PIPE_DEPTH)
+         << " 在途key上限=" << (PIPE_POOL_CONNS * PIPE_DEPTH * MGET_BATCH_SIZE)
+         << "; 同一请求的10批可能排队执行, 逻辑RTT含排队等待(共享池的代价)" << endl;
     cout << "[口径] MGET=逻辑100键请求数; KeyGET=其内部的单键GET命令数(逐条计RTT/超时);"
             " 成功/失败/超时=命令级; 逻辑请求行单独报100键整体RTT>5ms的个数" << endl;
 
