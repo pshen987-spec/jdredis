@@ -475,12 +475,32 @@ static void append_worker(string host, int port, const string& big) {
         for (int a = 0; a < APPEND_TIMES && !stop_signal.load(); ++a) {
 #if OPT_BIGKEY_GUARD
             stat_append_requested.fetch_add(1);
-            if (!allow_append_now()) {
-                stat_append_rate_limited.fetch_add(1);
+
+            // 读取真实长度: 追加后的长度 = 当前长度 + 本次追加长度
+            // (STRLEN 对 String 是 O(1); Key 不存在时返回 0, 与 APPEND 的创建语义一致)
+            redisReply* sr = (redisReply*)redisCommand(c, "STRLEN %s", key.c_str());
+            if (!sr) {
+                cerr << "  [strlen] " << (c ? c->errstr : "connection lost") << endl;
+                if (c) { redisFree(c); c = nullptr; }
+                break;   // 跳出内层 APPEND 循环, 由外层重连
+            }
+            bool is_string = (sr->type == REDIS_REPLY_INTEGER);
+            long long cur_len = is_string ? sr->integer : 0;
+            freeReplyObject(sr);
+            if (!is_string) {          // WRONGTYPE 等异常, 保守拒绝
+                stat_append_size_rejected.fetch_add(1);
                 continue;
             }
-            if (BIG_SIZE + big.size() > MAX_VALUE_SIZE) {
+
+            // 只有"追加后实际长度"超过上限才拦截
+            if (cur_len + (long long)big.size() > (long long)MAX_VALUE_SIZE) {
                 stat_append_size_rejected.fetch_add(1);
+                continue;
+            }
+
+            // 通过尺寸校验后再占用限流令牌, 避免限流额度被注定拒绝的请求消耗
+            if (!allow_append_now()) {
+                stat_append_rate_limited.fetch_add(1);
                 continue;
             }
 #endif
