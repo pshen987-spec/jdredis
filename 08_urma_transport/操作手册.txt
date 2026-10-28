@@ -1,0 +1,159 @@
+方案4：URMA / UMS 传输替换操作手册
+============================================================
+
+一、环境事实（已在 185/186 实测）
+---------------------------------
+- 两台都是 aarch64 鲲鹏，内核 6.6.12+；
+- UB 模块已加载：ubcore/uburma/udma/ubagg/ipourma/ubase；
+- 各 8 个 udma 设备 + bonding_dev_0，urma_admin show --all 全部 ACTIVE；
+- 185 EID：4245:4944:0000:0000:0000:0000:0100:0000
+  186 EID：4245:4944:0000:0000:0000:0000:0200:0000
+- 内核构建树在 /home/kernel（6.6.12+，含 Module.symvers）；
+  /usr/src/kernels 下的 6.6.0-159 头文件不能用于 6.6.12+ 模块；
+- UMDK 源码在 /home/umdk（git remote: atomgit.com/openeuler/umdk）。
+
+实测微基准（bonding_dev_0，CTP，RC）：
+  send_lat 64B    中位 2.11us
+  read_lat 4KB    中位 2.03us
+  read_lat 200KB  中位 6.71us
+  read_bw 200KB   47.9 GB/s（约 383Gbps，单 jetty）
+
+二、编译、安装、加载 UMS（185 和 186 都要做）
+----------------------------------------------
+1) 安装用户态依赖（缺 libnl3/systemd/keyutils/glib）：
+   yum install -y libnl3-devel systemd-devel keyutils-libs-devel glib2-devel
+
+2) 编译（使用匹配的 /home/kernel，不能用 /usr/src/kernels/6.6.0-159）：
+   cd /home/umdk/src
+   rm -rf build-ums && mkdir build-ums && cd build-ums
+   cmake .. -DBUILD_ALL=disable -DBUILD_UMS=enable \
+            -DKERNEL_PATH=/home/kernel -DKERNEL_RELEASE=6.6.12+ \
+            -DCMAKE_INSTALL_PREFIX=/usr
+   make -j8
+
+3) 安装（会装 ums.ko、libums-preload.so、ums_run、ums_agent）：
+   make install
+   depmod -a 6.6.12+
+
+4) 加载（隔离压测环境用 DISABLE；生产用 SECURE/LEGACY，两端必须一致）：
+   modprobe ums ub_token_mode=2
+   lsmod | grep '^ums'
+   ls -l /proc/net/ums
+   dmesg | grep UMS_ | tail
+
+   预期：ums 已加载，/proc/net/ums 存在，dmesg 出现
+   "adding ubcore device ..." 和 "ubcore client: ums_ubcore register success"。
+
+三、验证 UMS（不跑压测也能验证）
+---------------------------------
+1) 200KB 回环（两台都执行）：
+   185：ums_run python3 /tmp/ums_echo.py server
+   186：ums_run python3 /tmp/ums_echo.py client
+   在连接存活期间执行：cat /proc/net/ums
+   预期：
+     UMS_ACTIVE  Fallback=False
+     SRC_EID=...df00:0200  DEST_EID=...df00:4200  JETTY_ID 有值
+
+2) 真实 Redis 验证（临时 16380，不影响 6379/6380）：
+   185：写 /tmp/umsredis/redis.conf（port 16380, protected-mode no,
+        save "", appendonly no），然后：
+        ums_run redis-server /tmp/umsredis/redis.conf
+   186：ums_run python3 一个最小 RESP 客户端（PING/SET/GET 200KB）
+   在连接存活期间 cat /proc/net/ums，预期同样是 UMS_ACTIVE/False。
+   验证完：redis-cli -p 16380 shutdown nosave
+
+四、准备 08 方案文件
+--------------------
+1) 把本目录 4 个文件放到 185 的 /home/s30083118/jdredis/：
+   stress_test_opt8_urma.cpp
+   urma_kv_client.h / urma_kv_client.cpp
+   urma_proto.h
+   并放主控/采集脚本：
+   185_master_test_opt8_urma.sh
+   collect_opt8_metrics.sh
+
+2) 把 4 个 C++ 文件复制到 186 同一目录（或 scp）：
+   scp stress_test_opt8_urma.cpp urma_kv_client.* urma_proto.h \
+       root@20.20.21.186:/home/s30083118/jdredis/
+
+3) 在 186 编译：
+   cd /home/s30083118/jdredis
+   g++ -O3 -std=c++11 stress_test_opt8_urma.cpp urma_kv_client.cpp \
+       -o stress_test_opt8_urma -pthread -lhiredis -lurma \
+       -I/usr/local/include -L/usr/local/lib \
+       -I/usr/include/ub/umdk/urma
+   chmod +x stress_test_opt8_urma
+   ./stress_test_opt8_urma --identify
+   预期：
+     === 测试版本: 方案4 URMA ===
+     MGET总聚合=100  RTT超时阈值=5ms  网络读保护超时=100ms
+
+五、跑阶段A：UMS A/B（今天就能跑）
+-----------------------------------
+在 185：
+   cd /home/s30083118/jdredis
+   TRANSPORT=ums bash ./185_master_test_opt8_urma.sh
+或一键采集：
+   TRANSPORT=ums bash ./collect_opt8_metrics.sh
+
+脚本行为：
+- 只给主库 6379 套 ums_run；备库 6380 保持 TCP（复制走 127.0.0.1）；
+- 压测机 186 用 ums_run 启动客户端；
+- 采样新增 /proc/net/ums 到 logs/ums_proc_*.log；
+- 汇总报告新增 [传输] 段，显示 UMS_ACTIVE 样本数与 Fallback=True 样本数。
+
+六、跑阶段B：URMA 原生数据面（需要 Redis 侧 Agent）
+----------------------------------------------------
+当前仓库已包含客户端库与线协议，但 Redis 侧 Agent 尚未实现，因此
+--transport=urma 会在控制面建链(16379)阶段失败，这是预期状态。
+Agent 需要完成：
+1) 在 Redis 进程内创建 urma context / jetty / jfc / Arena(16GB~96GB)；
+2) 监听 16379，完成 urma_proto.h 的 hello 交换；
+3) 每个客户端分配命令环(64x4KB)、写槽租约(32x256KB)；
+4) 主循环 poll JFC，处理 WRITE_WITH_IMM 命令，写描述符到客户端回复环；
+5) SET/APPEND 从租约槽接管 value，不再 memcpy。
+完成后在 185：
+   TRANSPORT=urma bash ./185_master_test_opt8_urma.sh
+   TRANSPORT=urma bash ./collect_opt8_metrics.sh
+
+七、有效性门禁与判读
+--------------------
+1) UMS 必须先看 /proc/net/ums：
+   Fallback=False 才算走 UB；Fallback=True 说明退回 TCP，本轮无效。
+2) 185 以太网 TX 应从约 20Gbps 降到接近 0（数据改走 UB）。
+3) INFO commandstats 的 usec_per_call 应与基线一致：
+   MGET 31.8 / GET 6.7 / SET 1.4 / APPEND 64.3（证明只换传输）。
+4) 主线程 usr/sys 拆分必须看 pidstat -t：sys 下降才算传输层收益。
+5) 单轮噪声带：吞吐 ±2.5%、慢命令 ±9%、>5ms ±0.62pp；小于该幅度不算收益。
+6) 任何一轮失败数>0、丢包/错误>0，本轮不进入结论。
+
+八、常见问题
+------------
+1) modprobe ums 报 vermagic/unknown symbol：
+   - 必须用 /home/kernel 编译，命令里带
+     -DKERNEL_PATH=/home/kernel -DKERNEL_RELEASE=6.6.12+；
+   - 确认 ubcore 已加载，/home/kernel/Module.symvers 含 ubcore_* 符号。
+2) /proc/net/ums 里 Fallback=True：
+   - 两端 ub_token_mode 不一致；都设为 2（DISABLE）或都设为 0（SECURE）。
+   - dmesg | grep ub_token_mode 确认实际生效值。
+3) ums_run 报找不到 preload：
+   - 默认找 /usr/lib/libums-preload.so；若装在 /usr/lib64，直接用
+     LD_PRELOAD=/usr/lib64/libums-preload.so 启动。
+4) 主从复制异常：
+   - 不要把 6380 也套 ums_run；复制保持 TCP/环回。
+   - 检查 redis-cli -p 6380 INFO replication 的 master_link_status。
+5) 压测程序找不到 / 版本不对：
+   - 必须在 186 重新编译，./stress_test_opt8_urma --identify 必须输出
+     "=== 测试版本: 方案4 URMA ==="。
+6) sys 不降、吞吐只涨一点：
+   - 说明 74% sys 主要不是 TCP 栈，而是拷贝/Redis 自身；
+     这正是进入阶段B（零拷贝）的依据，不是 UMS 实验失败。
+
+九、回滚
+--------
+1) 停止压测/临时 Redis：
+   pkill -f stress_test_opt8_urma
+   redis-cli -p 16380 shutdown nosave 2>/dev/null
+2) 卸载模块（确保没有 UMS 连接）：
+   modprobe -r ums
+3) 恢复基线：直接跑 00_baseline 的 185_master_test.sh 与 stress_test_v2。
