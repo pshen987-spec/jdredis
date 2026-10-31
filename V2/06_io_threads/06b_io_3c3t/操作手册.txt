@@ -1,0 +1,16 @@
+方案6B：每实例3核，io-threads=3，读取I/O线程开启（v2）
+=========================================================
+与v2 1.0倍基线独立比较，客户端逻辑与数据完全相同：预热Value按截断正态分布抽样，正式SET固定200KiB。Redis主库绑0,1,2，备库绑3,4,5；io-threads=3包含主线程和2个辅助I/O线程。
+
+186放置 stress_test_opt6b_io.cpp；在 /home/s30083118/jdredis/ 执行：
+g++ -O3 -std=c++11 stress_test_opt6b_io.cpp -o stress_test_opt6b_io -pthread -lhiredis
+
+185放置 185_master_test_opt6b_io.sh、collect_opt6b_io_metrics.sh；在 /home/s30083118/jdredis/ 执行：
+bash collect_opt6b_io_metrics.sh --check
+bash collect_opt6b_io_metrics.sh
+
+主控重建主备后确认两侧均为io-threads=3、io-threads-do-reads=yes，采主备线程CPU日志。成功后自动上传206：/home/s30083118/jdredis/acceptance_data/opt6b_io_3c3t/<时间戳>/。
+6B相对6A同时改变了核数和I/O线程数，不能单独归因；本方案没有增加Redis BIO工作线程。
+“3核”由taskset设置进程CPU亲和范围；若Redis运行在有CPU配额的容器中，还需在容器层核对配额。
+
+上传206优先使用SSH密钥；若只能密码登录，在185的shell中设置 JUMP_PASS 环境变量。

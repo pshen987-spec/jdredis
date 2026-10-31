@@ -1,0 +1,28 @@
+方案5：Redis Client SDK Zstd 透明压缩（v2）
+========================================
+独立对比 v2 1.0 倍基线；Redis Server仍使用基线配置。预热Value大小为截断正态分布，正式SET固定200KiB；其余Key池、种子、TTL、并发与阶段时长同V2基线。
+
+文件与节点
+186 /home/s30083118/jdredis/ ：jdredis_zstd_sdk.h、stress_test_opt5_zstd.cpp，编译后为 stress_test_opt5_zstd。
+185 /home/s30083118/jdredis/ ：185_master_test_opt5_zstd.sh、collect_opt5_zstd_metrics.sh。
+206 /home/s30083118/jdredis/acceptance_data/opt5_sdk_zstd/<时间戳>/ ：成功后自动归档。
+
+1. 186 编译和自检：
+   cd /home/s30083118/jdredis
+   g++ -O3 -std=c++11 stress_test_opt5_zstd.cpp -o stress_test_opt5_zstd -pthread -lhiredis -lzstd
+   ./stress_test_opt5_zstd --self-test
+
+2. 185 预检与压测：
+   cd /home/s30083118/jdredis
+   bash collect_opt5_zstd_metrics.sh --check
+   bash collect_opt5_zstd_metrics.sh
+
+SDK行为
+- 业务层传入原始二进制；SDK将每次SET/APPEND编码为带版本、原始长度、压缩长度和校验值的Zstd帧。Redis仅存帧，仍执行SET/GET/MGET/APPEND原生命令。
+- APPEND将新帧接在旧帧后；GET/MGET逐帧还原并拼接，验证长度与校验值。缺失Key仍是miss。非SDK旧格式、混合格式及损坏帧显式报错；本试验每轮清库，不做旧数据迁移。
+- 预热也经SDK写入。RTT包含编解码和Redis往返；统计每阶段原始字节、存储帧字节、编解码次数/失败及客户端CPU。APPEND返回的Redis整数是压缩后长度，不能用它推断原始Value是否>=500KiB。
+- 当前v2基线内容是按大小预生成的伪随机字节，正式SET取其中200KiB大小，通常不可压缩。即使压缩比接近或大于1，也必须如实报告；不可用人为可压缩样本替换主A/B实验。
+
+注意：本地只完成代码与静态检查，需在186编译并运行--self-test，再做两节点压测。
+
+上传206优先使用SSH密钥；若只能密码登录，在185的shell中设置 JUMP_PASS 环境变量。

@@ -1,0 +1,44 @@
+v2 baseline operation guide
+===========================
+
+仓库源码目录：
+V2/baseline/
+
+206中转目录（请先把上述文件上传到此目录）：
+/home/s30083118/jdredis/V2/baseline/
+
+1. 在206复制4个执行文件到两台机器
+scp /home/s30083118/jdredis/V2/baseline/185_master_test_baseline_v2.sh root@20.20.21.185:/home/s30083118/jdredis/
+scp /home/s30083118/jdredis/V2/baseline/collect_baseline_v2_metrics.sh root@20.20.21.185:/home/s30083118/jdredis/
+scp /home/s30083118/jdredis/V2/baseline/run_baseline_v2_sweep.sh root@20.20.21.185:/home/s30083118/jdredis/
+scp /home/s30083118/jdredis/V2/baseline/stress_test_baseline_v2.cpp root@20.20.21.186:/home/s30083118/jdredis/
+
+2. 在186编译和自检
+cd /home/s30083118/jdredis
+g++ -O3 -std=c++11 stress_test_baseline_v2.cpp -o stress_test_baseline_v2 -pthread -lhiredis
+./stress_test_baseline_v2 --identify
+./stress_test_baseline_v2 --self-test
+
+3. 在185预检（不改Redis）
+cd /home/s30083118/jdredis
+bash collect_baseline_v2_metrics.sh --check
+自动模式优先使用185到186的SSH密钥。若环境只能密码登录，可在185的shell中设置 CLIENT_PASS 环境变量。仓库不内置206密码。优先使用SSH密钥；若只能密码登录，可在185的shell中设置 JUMP_PASS 环境变量。每轮建目录、上传、远端校验复用同一个SSH连接。
+
+4. 在185正式跑单轮1.0倍基线
+cd /home/s30083118/jdredis
+LOAD_MULTIPLIER=1.0 bash collect_baseline_v2_metrics.sh
+
+5. 在185跑低倍率线程阶梯
+cd /home/s30083118/jdredis
+bash run_baseline_v2_sweep.sh
+默认顺序为0.5、0.75、1.0、1.25。每轮重新建立主备Redis并单独采集。1.0倍为20个MGET线程+20个SET线程；阶段3再加40个GET线程+5个APPEND线程。各档线程数按倍率四舍五入；实际OPS由客户端输出和Redis INFO统计，不把线程倍率解释成OPS倍率。若已单独测过1.0倍仍可重复本档，用于核对结果稳定性。
+
+6. 数据位置
+185: /home/s30083118/jdredis/acceptance_data/<run_id>/
+206: /home/s30083118/jdredis/acceptance_data/baseline_v2/<run_id>/
+关键文件为 acceptance_summary.txt、acceptance_samples.csv、logs/client_out_<run_id>.log。
+上传默认开启；如只在185保留结果，设置 UPLOAD_RESULTS=0。
+
+口径：每轮先写入整个40万Key池，采用每批1000条SET流水发送；仅预热Value大小按截断正态分布抽样（均值200KiB、sigma=63.33KiB、范围10..390KiB），TTL=1s。预热写入不计入阶段2/3的OPS。GET/SET从整体40万个Key中独立均匀随机选，MGET/APPEND也从该集合选Key；阶段2/3的普通SET Value固定200KiB，SET使用TTL=1s。阶段2持续30s，阶段3持续60s。MGET每次100个不同Key；APPEND每轮随机选1个Key，每次固定追加200KiB，连续追加5次，保持Redis原生TTL语义：已有Key不刷新TTL，缺失Key由APPEND创建且无TTL。默认无异常SET注入，ABNORMAL_SET_SHARE可注入512KiB。没有单独保活线程。8000写OPS+13000读OPS是需要核对的业务参考量，脚本通过增加并发寻找Redis实际能力，不预设它一定达到。
+
+注意：本次修改后必须重新上传185上的两个脚本及186上的C++源码，并在186重新编译。--check会用新的workload标记拒绝旧二进制。此前同目录下的基线数据属于“正式SET正态分布”旧口径，不要与这次“正式SET固定200KiB”结果混作同一基线。

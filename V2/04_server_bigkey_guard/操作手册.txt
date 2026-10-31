@@ -1,0 +1,33 @@
+方案4：Redis Server 大 Key 拦截（v2）
+===================================
+本方案独立对比 v2 1.0 倍基线。客户端预热Value为10～390KiB截断正态；正式SET固定200KiB、APPEND每次200KiB、40万随机Key、TTL 1s、MGET 100 Key、阶段2 30s/阶段3 60s。
+
+文件与节点
+185 /home/s30083118/jdredis/ ：redis_7_2_5_guard.patch、build_redis_opt4.sh、185_master_test_opt4_guard.sh、collect_opt4_guard_metrics.sh。
+186 /home/s30083118/jdredis/ ：stress_test_opt4_guard.cpp，编译后为 stress_test_opt4_guard。
+206 /home/s30083118/jdredis/acceptance_data/opt4_server_bigkey_guard/<时间戳>/ ：成功后自动归档。
+
+1. 185 生成独立的补丁版 Redis（不覆盖原 Redis 二进制）：
+   cd /home/s30083118/jdredis
+   bash build_redis_opt4.sh
+   结果应为 /home/s30083118/jdredis/redis-server-opt4。
+
+2. 186 编译客户端：
+   cd /home/s30083118/jdredis
+   g++ -O3 -std=c++11 stress_test_opt4_guard.cpp -o stress_test_opt4_guard -pthread -lhiredis
+   ./stress_test_opt4_guard --self-test
+
+3. 185 预检及压测：
+   cd /home/s30083118/jdredis
+   bash collect_opt4_guard_metrics.sh --check
+   bash collect_opt4_guard_metrics.sh
+   如用密码连接186，可先设置 CLIENT_PASS；206上传优先使用SSH密钥；若只能密码登录，在185的shell中设置 JUMP_PASS。
+
+实现边界
+- 服务器部署参数 JD_VALUE_LIMIT_BYTES 由主控脚本设置，默认512000字节；可在185以 VALUE_LIMIT_BYTES 环境变量覆盖，重启Redis生效。此版本是每实例一个阈值，不实现同实例不同应用的独立阈值。
+- SET家族走 setGenericCommand 的写入在修改前检查；APPEND按实际旧Value长度加新增字节检查。结果 >= 阈值拒绝，旧值与TTL不变。MSET、Lua中其他写入路径尚未覆盖，不能对外宣称所有写入都被保护。
+- 主控重建主备后用边界值检查服务端补丁：512000字节SET必须拒绝，511999字节SET必须放行，再追加1字节必须拒绝且TTL不变。通过后才进入压测。
+- 客户端分别输出 offered、success、rejected、error；rejected 是规则拒绝，不能算成功写入。正常SET固定200KiB，不会触发500KiB门槛；默认0%的异常SET，主要观察APPEND拒绝。
+- 收集CPU、网络、RTT>5ms、内存、复制、丢包；结果归档到185 acceptance_data/<时间戳>/，成功后上传206。
+
+注意：本地只完成代码与静态检查，需在185/186按以上步骤完成编译与真实环境验证。

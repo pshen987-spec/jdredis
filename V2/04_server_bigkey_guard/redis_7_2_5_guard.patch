@@ -1,0 +1,79 @@
+diff --git a/src/t_string.c b/src/t_string.c
+index 2bce3ac..d03b7ea 100644
+--- a/src/t_string.c
++++ b/src/t_string.c
+@@ -29,10 +29,42 @@
+ 
+ #include "server.h"
+ #include <math.h> /* isnan(), isinf() */
++#include <errno.h>
++#include <stdlib.h>
+ 
+ /* Forward declarations */
+ int getGenericCommand(client *c);
+ 
++/* Deployment setting for this Redis instance. Default: 500 KiB. The limit is
++ * read once on first use; restart Redis after changing the environment. */
++static size_t jdStringLimit(void) {
++    static size_t limit = 0;
++    if (limit == 0) {
++        const char *configured = getenv("JD_VALUE_LIMIT_BYTES");
++        unsigned long long parsed = 0;
++        char *end = NULL;
++        if (configured && *configured) {
++            errno = 0;
++            parsed = strtoull(configured, &end, 10);
++            if (errno || end == configured || *end || parsed < 1 || parsed > SIZE_MAX) {
++                serverLog(LL_WARNING,"invalid JD_VALUE_LIMIT_BYTES; using 512000");
++                parsed = 512000;
++            }
++        } else {
++            parsed = 512000;
++        }
++        limit = (size_t)parsed;
++    }
++    return limit;
++}
++
++static int jdRejectOversize(client *c, size_t value_len, const char *operation) {
++    if (value_len < jdStringLimit()) return C_OK;
++    addReplyErrorFormat(c,"JD_VALUE_LIMIT %s value would be %zu bytes (limit %zu)",
++                        operation,value_len,jdStringLimit());
++    return C_ERR;
++}
++
+ /*-----------------------------------------------------------------------------
+  * String Commands
+  *----------------------------------------------------------------------------*/
+@@ -90,6 +122,9 @@ void setGenericCommand(client *c, int flags, robj *key, robj *val, robj *expire,
+         return;
+     }
+ 
++    /* Check before GET reply and before mutation; rejected writes emit one error. */
++    if (jdRejectOversize(c,stringObjectLen(val),"SET") != C_OK) return;
++
+     if (flags & OBJ_SET_GET) {
+         if (getGenericCommand(c) == C_ERR) return;
+     }
+@@ -700,6 +735,8 @@ void appendCommand(client *c) {
+ 
+     o = lookupKeyWrite(c->db,c->argv[1]);
+     if (o == NULL) {
++        if (jdRejectOversize(c,stringObjectLen(c->argv[2]),"APPEND") != C_OK)
++            return;
+         /* Create the key */
+         c->argv[2] = tryObjectEncoding(c->argv[2]);
+         dbAdd(c->db,c->argv[1],c->argv[2]);
+@@ -714,6 +751,12 @@ void appendCommand(client *c) {
+         append = c->argv[2];
+         if (checkStringLength(c,stringObjectLen(o),sdslen(append->ptr)) != C_OK)
+             return;
++        size_t old_len = stringObjectLen(o);
++        size_t added_len = sdslen(append->ptr);
++        if (old_len >= jdStringLimit() || added_len >= jdStringLimit() - old_len) {
++            addReplyErrorFormat(c,"JD_VALUE_LIMIT APPEND value would reach or exceed %zu bytes",jdStringLimit());
++            return;
++        }
+ 
+         /* Append the value */
+         o = dbUnshareStringValue(c->db,c->argv[1],o);
